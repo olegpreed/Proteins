@@ -10,7 +10,7 @@ import SwiftUI
 struct SignInFormView: View {
     @State private var username: String = ""
     @State private var password: String = ""
-    @StateObject private var signInModel = SignInModel()
+    @ObservedObject var signInModel: SignInModel
     
     var body: some View {
         HStack {
@@ -19,13 +19,12 @@ struct SignInFormView: View {
                     .font(.custom("IBMPlexMono-Regular", size: 17))
                     .foregroundStyle(.white)
                     .padding()
-                
                 SecureField("", text: $password, prompt: Text("Password").foregroundStyle(.white))
                     .font(.custom("IBMPlexMono-Regular", size: 17))
                     .padding()
-                
             }
             Button(action: {
+                signInModel.signIn(email: username, password: password)
             }
             ) {
                 Image(systemName: "arrowshape.right.fill")
@@ -38,12 +37,16 @@ struct SignInFormView: View {
             .buttonStyle(.bordered)
             .buttonBorderShape(.roundedRectangle(radius: 6))
             .tint(.white)
-            
         }
         .fixedSize(horizontal: false, vertical: true)
+        .alert(item: $signInModel.alertItem) { alertItem in
+            Alert(title: Text(alertItem.title), message: Text(alertItem.message), dismissButton: .default(Text("OK")))
+        }
     }
 }
 
 #Preview {
-    SignInFormView()
+    SignInFormView(
+        signInModel: SignInModel()
+    )
 }

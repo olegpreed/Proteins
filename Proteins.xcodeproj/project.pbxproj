@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0FF515942E40B5C4003467EE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 0FF515932E40B5C4003467EE /* FirebaseAuth */; };
+		0FF515962E40B5C4003467EE /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0FF515952E40B5C4003467EE /* FirebaseCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		0FF515722E40B331003467EE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +34,30 @@
 		0FF5157B2E40B331003467EE /* ProteinsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ProteinsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0FC8A2002E49C2D7007F1B8B /* Exceptions for "Proteins" folder in "Proteins" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0FF515632E40B330003467EE /* Proteins */;
+		};
+		0FF5159A2E40B652003467EE /* Exceptions for "Proteins" folder in "ProteinsTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"GoogleService-Info.plist",
+			);
+			target = 0FF515702E40B331003467EE /* ProteinsTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0FF515662E40B330003467EE /* Proteins */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0FC8A2002E49C2D7007F1B8B /* Exceptions for "Proteins" folder in "Proteins" target */,
+				0FF5159A2E40B652003467EE /* Exceptions for "Proteins" folder in "ProteinsTests" target */,
+			);
 			path = Proteins;
 			sourceTree = "<group>";
 		};
@@ -52,6 +78,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0FF515962E40B5C4003467EE /* FirebaseCore in Frameworks */,
+				0FF515942E40B5C4003467EE /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +140,8 @@
 			);
 			name = Proteins;
 			packageProductDependencies = (
+				0FF515932E40B5C4003467EE /* FirebaseAuth */,
+				0FF515952E40B5C4003467EE /* FirebaseCore */,
 			);
 			productName = Proteins;
 			productReference = 0FF515642E40B330003467EE /* Proteins.app */;
@@ -195,6 +225,9 @@
 			);
 			mainGroup = 0FF5155B2E40B330003467EE;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0FF515922E40B5C4003467EE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0FF515652E40B330003467EE /* Products */;
 			projectDirPath = "";
@@ -395,8 +428,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P8PXX8TA23;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Proteins/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We just need your face";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -422,8 +458,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P8PXX8TA23;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Proteins/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We just need your face";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -550,6 +589,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0FF515922E40B5C4003467EE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0FF515932E40B5C4003467EE /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0FF515922E40B5C4003467EE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		0FF515952E40B5C4003467EE /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0FF515922E40B5C4003467EE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0FF5155C2E40B330003467EE /* Project object */;
 }

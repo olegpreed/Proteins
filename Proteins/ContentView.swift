@@ -8,14 +8,29 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var signInModel = SignInModel()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        ZStack{
+            if signInModel.user != nil
+            {
+                SearchView(signInModel: signInModel)
+                    .transition(.move(edge: .trailing))
+            }
+            else
+            {
+                SignInView(signInModel: signInModel)
+//                    .transition(.move(edge: .leading))
+            }
         }
-        .padding()
+        .animation(.easeInOut, value: signInModel.user)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .inactive || newPhase == .background {
+                signInModel.signOut()
+            }
+        }
+                
     }
 }
 
