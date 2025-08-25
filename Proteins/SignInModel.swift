@@ -31,6 +31,7 @@ class SignInModel: ObservableObject {
                                                             message: createError.localizedDescription)
                             return
                         }
+                        CredentialsStore.shared.storeCredentials(email: email, password: password)
                         self.user = result?.user
                     }
                 } else {
@@ -42,6 +43,8 @@ class SignInModel: ObservableObject {
             
             // Signed in successfully
             self.user = result?.user
+            CredentialsStore.shared.storeCredentials(email: email, password: password)
+
         }
     }
 }

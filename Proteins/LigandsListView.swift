@@ -21,7 +21,7 @@ struct LigandsListView: View {
                                 .scrollTransition(transition: { content, phase in
                                     content
         //                            .scaleEffect (phase.isIdentity ? 1 : 0.1)
-                                        .opacity(phase.isIdentity ? 1 : -1)
+                                        .opacity(phase.isIdentity ? 1 : 0)
                                 })
                         }
                         .buttonStyle(.plain)
@@ -30,9 +30,12 @@ struct LigandsListView: View {
                         ProteinView(ligand: ligand)
                     }
                 }
-                
+                .padding(.vertical)
                 .frame(maxWidth: .infinity)
+               
             }
+            .defaultScrollAnchor(.center, for: .alignment)
+            .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
         
         
     }

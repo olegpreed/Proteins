@@ -20,17 +20,16 @@ struct ContentView: View {
             }
             else
             {
-                SignInView(signInModel: signInModel)
+                SplashScreen(signInModel: signInModel)
 //                    .transition(.move(edge: .leading))
             }
         }
         .animation(.easeInOut, value: signInModel.user)
         .onChange(of: scenePhase) { oldPhase, newPhase in
-            if newPhase == .inactive || newPhase == .background {
+            if newPhase == .background {
                 signInModel.signOut()
             }
         }
-                
     }
 }
 
