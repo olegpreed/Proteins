@@ -8,6 +8,7 @@ struct MoleculeSceneView: View {
     let structure: CIFStructure
     let rotation: simd_quatf
     let zoom: Float
+    let showHydrogen: Bool
     @ObservedObject var coordinator: MoleculeSceneCoordinator
     
     var body: some View {
@@ -18,7 +19,7 @@ struct MoleculeSceneView: View {
             }
 
             coordinator.structure = structure
-            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom) {
+            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom, showHydrogen: showHydrogen) {
                 content.add(newRoot)
                 coordinator.rootEntity = newRoot
             }
@@ -29,7 +30,7 @@ struct MoleculeSceneView: View {
             }
 
             coordinator.structure = structure
-            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom) {
+            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom, showHydrogen: showHydrogen) {
                 content.add(newRoot)
                 coordinator.rootEntity = newRoot
 
@@ -128,8 +129,8 @@ enum MoleculeSceneBuilder {
         entity.name = "selection-outline"
 
         // Create a glowing outline using a slightly larger transparent sphere
-        let atomRadius: Float = 0.08
-        let outlineRadius: Float = atomRadius * 1.5
+        let atomRadius: Float = 0.05
+        let outlineRadius: Float = atomRadius * 1.8
 
         var outlineMaterial = UnlitMaterial(color: .systemYellow)
         outlineMaterial.blending = .transparent(opacity: 0.4)
@@ -155,8 +156,12 @@ enum MoleculeSceneBuilder {
         return entity
     }
 
-    static func makeScene(for structure: CIFStructure, rotation: simd_quatf, zoom: Float) -> Entity? {
+    static func makeScene(for structure: CIFStructure, rotation: simd_quatf, zoom: Float, showHydrogen: Bool) -> Entity? {
         let atomsWithPositions = structure.atoms.compactMap { atom -> (CIFAtom, SIMD3<Float>)? in
+            // Filter out hydrogen atoms if showHydrogen is false
+            if !showHydrogen && atom.element.uppercased() == "H" {
+                return nil
+            }
             guard let position = atom.scenePosition else { return nil }
             return (atom, position)
         }
@@ -165,7 +170,7 @@ enum MoleculeSceneBuilder {
             return nil
         }
         
-        let centeredAtoms = centerAndScale(atomsWithPositions)
+        let centeredAtoms = centerAndScale(atomsWithPositions, bonds: structure.bonds)
         let root = Entity()
         root.name = "MoleculeRoot"
         
@@ -198,7 +203,8 @@ enum MoleculeSceneBuilder {
     }
     
     private static func makeAtomEntity(atom: CIFAtom, position: SIMD3<Float>) -> ModelEntity {
-        let mesh = MeshResource.generateSphere(radius: 0.08)
+        let atomRadius: Float = 0.05
+        let mesh = MeshResource.generateSphere(radius: atomRadius)
         let material = SimpleMaterial(color: color(for: atom.element), roughness: 0.25, isMetallic: false)
 
         let entity = ModelEntity(mesh: mesh, materials: [material])
@@ -206,7 +212,7 @@ enum MoleculeSceneBuilder {
         entity.name = "atom:\(atom.label)"
 
         // Add collision component for hit testing
-        entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: 0.08)]))
+        entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: atomRadius)]))
         entity.components.set(InputTargetComponent())
 
         return entity
@@ -234,10 +240,10 @@ enum MoleculeSceneBuilder {
         
         let primaryMaterial = SimpleMaterial(color: .systemGray3, roughness: 0.15, isMetallic: true)
         let secondaryMaterial = SimpleMaterial(color: .systemGray4, roughness: 0.15, isMetallic: true)
-        let baseRadius: Float = 0.035
-        let secondaryRadius: Float = 0.024
-        let tertiaryRadius: Float = 0.02
-        let offsetDistance: Float = 0.05
+        let baseRadius: Float = 0.022
+        let secondaryRadius: Float = 0.015
+        let tertiaryRadius: Float = 0.013
+        let offsetDistance: Float = 0.032
         
         func addCylinder(radius: Float, material: SimpleMaterial, offsetScale: Float) {
             let mesh = MeshResource.generateCylinder(height: distance, radius: radius)
@@ -306,24 +312,54 @@ enum MoleculeSceneBuilder {
         }
     }
     
-    private static func centerAndScale(_ atoms: [(CIFAtom, SIMD3<Float>)]) -> (positions: [(atom: CIFAtom, position: SIMD3<Float>)], lookup: [String: SIMD3<Float>], maxRadius: Float) {
+    private static func centerAndScale(_ atoms: [(CIFAtom, SIMD3<Float>)], bonds: [CIFBond]) -> (positions: [(atom: CIFAtom, position: SIMD3<Float>)], lookup: [String: SIMD3<Float>], maxRadius: Float) {
         let positions = atoms.map { $0.1 }
         let count = Float(positions.count)
         let centroid = positions.reduce(SIMD3<Float>(repeating: 0), +) / max(count, 1)
         let centered = positions.map { $0 - centroid }
-        let maxRadius = centered.map { simd_length($0) }.max() ?? 1
-        let scale = maxRadius > 0 ? 1.5 / maxRadius : 1
-        
+
+        // Create a temporary lookup for calculating bond lengths
+        var tempLookup: [String: SIMD3<Float>] = [:]
+        for (index, entry) in atoms.enumerated() {
+            tempLookup[entry.0.label] = centered[index]
+            tempLookup["\(entry.0.componentID).\(entry.0.label)"] = centered[index]
+        }
+
+        // Calculate average bond length to normalize scaling
+        var bondLengths: [Float] = []
+        for bond in bonds {
+            if let pos1 = tempLookup[bond.atomID1] ?? tempLookup["\(bond.componentID).\(bond.atomID1)"],
+               let pos2 = tempLookup[bond.atomID2] ?? tempLookup["\(bond.componentID).\(bond.atomID2)"] {
+                let length = simd_length(pos2 - pos1)
+                if length > 0.0001 { // Avoid zero-length bonds
+                    bondLengths.append(length)
+                }
+            }
+        }
+
+        // Determine scale factor based on average bond length
+        let scale: Float
+        if !bondLengths.isEmpty {
+            let avgBondLength = bondLengths.reduce(0, +) / Float(bondLengths.count)
+            let targetBondLength: Float = 0.35 // Target bond length in scene units
+            scale = avgBondLength > 0 ? targetBondLength / avgBondLength : 1
+        } else {
+            // Fallback to old scaling method if no bonds
+            let maxRadius = centered.map { simd_length($0) }.max() ?? 1
+            scale = maxRadius > 0 ? 1.5 / maxRadius : 1
+        }
+
         var mapped: [(CIFAtom, SIMD3<Float>)] = []
         var lookup: [String: SIMD3<Float>] = [:]
-        
+
         for (index, entry) in atoms.enumerated() {
             let position = centered[index] * scale
             mapped.append((entry.0, position))
             lookup[entry.0.label] = position
             lookup["\(entry.0.componentID).\(entry.0.label)"] = position
         }
-        
+
+        let maxRadius = centered.map { simd_length($0) }.max() ?? 1
         return (positions: mapped, lookup: lookup, maxRadius: maxRadius * scale)
     }
 }

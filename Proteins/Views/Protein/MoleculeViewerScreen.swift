@@ -11,6 +11,7 @@ struct MoleculeViewerScreen: View {
     @State private var lastMagnification: CGFloat = 1
     @StateObject private var coordinator = MoleculeSceneCoordinator()
     @State private var showingAtomDetails = false
+    @State private var showHydrogen = true
 
     private let minZoom: Float = 0.3
     private let maxZoom: Float = 3.0
@@ -18,7 +19,7 @@ struct MoleculeViewerScreen: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom, coordinator: coordinator)
+            MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom, showHydrogen: showHydrogen, coordinator: coordinator)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .gesture(dragGesture)
                 .simultaneousGesture(magnificationGesture)
@@ -47,6 +48,12 @@ struct MoleculeViewerScreen: View {
                 .padding(.horizontal)
 
                 HStack(spacing: 16) {
+                    Toggle(isOn: $showHydrogen) {
+                        Label("Hydrogen", systemImage: showHydrogen ? "eye" : "eye.slash")
+                    }
+                    .toggleStyle(.button)
+                    .buttonStyle(.bordered)
+
                     Button {
                         resetView()
                     } label: {
