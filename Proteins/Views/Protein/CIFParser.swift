@@ -384,27 +384,49 @@ extension CIFDataBlock {
     }
     
     private func parseAtoms() -> [CIFAtom] {
-        guard let atomLoop = loop(containing: "_chem_comp_atom.atom_id") else {
+        // First try to parse from loop format
+        if let atomLoop = loop(containing: "_chem_comp_atom.atom_id") {
+            return atomLoop.records().map { record in
+                CIFAtom(
+                    componentID: record["_chem_comp_atom.comp_id"] ?? "",
+                    label: record["_chem_comp_atom.atom_id"] ?? "",
+                    alternateLabel: Self.sanitized(record["_chem_comp_atom.alt_atom_id"]),
+                    element: record["_chem_comp_atom.type_symbol"] ?? "",
+                    charge: Self.parseInt(record["_chem_comp_atom.charge"]),
+                    x: Self.parseDouble(record["_chem_comp_atom.model_Cartn_x"]),
+                    y: Self.parseDouble(record["_chem_comp_atom.model_Cartn_y"]),
+                    z: Self.parseDouble(record["_chem_comp_atom.model_Cartn_z"]),
+                    idealX: Self.parseDouble(record["_chem_comp_atom.pdbx_model_Cartn_x_ideal"]),
+                    idealY: Self.parseDouble(record["_chem_comp_atom.pdbx_model_Cartn_y_ideal"]),
+                    idealZ: Self.parseDouble(record["_chem_comp_atom.pdbx_model_Cartn_z_ideal"]),
+                    isAromatic: Self.parseFlag(record["_chem_comp_atom.pdbx_aromatic_flag"]) ?? false,
+                    isBackboneAtom: Self.parseFlag(record["_chem_comp_atom.pdbx_backbone_atom_flag"]) ?? false
+                )
+            }
+        }
+
+        // Fallback: parse single atom from individual tags (for single-atom ligands like ZN)
+        guard let atomId = values(for: "_chem_comp_atom.atom_id")?.first else {
             return []
         }
-        
-        return atomLoop.records().map { record in
-            CIFAtom(
-                componentID: record["_chem_comp_atom.comp_id"] ?? "",
-                label: record["_chem_comp_atom.atom_id"] ?? "",
-                alternateLabel: Self.sanitized(record["_chem_comp_atom.alt_atom_id"]),
-                element: record["_chem_comp_atom.type_symbol"] ?? "",
-                charge: Self.parseInt(record["_chem_comp_atom.charge"]),
-                x: Self.parseDouble(record["_chem_comp_atom.model_Cartn_x"]),
-                y: Self.parseDouble(record["_chem_comp_atom.model_Cartn_y"]),
-                z: Self.parseDouble(record["_chem_comp_atom.model_Cartn_z"]),
-                idealX: Self.parseDouble(record["_chem_comp_atom.pdbx_model_Cartn_x_ideal"]),
-                idealY: Self.parseDouble(record["_chem_comp_atom.pdbx_model_Cartn_y_ideal"]),
-                idealZ: Self.parseDouble(record["_chem_comp_atom.pdbx_model_Cartn_z_ideal"]),
-                isAromatic: Self.parseFlag(record["_chem_comp_atom.pdbx_aromatic_flag"]) ?? false,
-                isBackboneAtom: Self.parseFlag(record["_chem_comp_atom.pdbx_backbone_atom_flag"]) ?? false
-            )
-        }
+
+        let atom = CIFAtom(
+            componentID: values(for: "_chem_comp_atom.comp_id")?.first ?? "",
+            label: atomId,
+            alternateLabel: Self.sanitized(values(for: "_chem_comp_atom.alt_atom_id")?.first),
+            element: values(for: "_chem_comp_atom.type_symbol")?.first ?? "",
+            charge: Self.parseInt(values(for: "_chem_comp_atom.charge")?.first),
+            x: Self.parseDouble(values(for: "_chem_comp_atom.model_Cartn_x")?.first),
+            y: Self.parseDouble(values(for: "_chem_comp_atom.model_Cartn_y")?.first),
+            z: Self.parseDouble(values(for: "_chem_comp_atom.model_Cartn_z")?.first),
+            idealX: Self.parseDouble(values(for: "_chem_comp_atom.pdbx_model_Cartn_x_ideal")?.first),
+            idealY: Self.parseDouble(values(for: "_chem_comp_atom.pdbx_model_Cartn_y_ideal")?.first),
+            idealZ: Self.parseDouble(values(for: "_chem_comp_atom.pdbx_model_Cartn_z_ideal")?.first),
+            isAromatic: Self.parseFlag(values(for: "_chem_comp_atom.pdbx_aromatic_flag")?.first) ?? false,
+            isBackboneAtom: Self.parseFlag(values(for: "_chem_comp_atom.pdbx_backbone_atom_flag")?.first) ?? false
+        )
+
+        return [atom]
     }
     
     private func parseBonds() -> [CIFBond] {

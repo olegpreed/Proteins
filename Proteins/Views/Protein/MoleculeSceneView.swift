@@ -157,12 +157,18 @@ enum MoleculeSceneBuilder {
     }
 
     static func makeScene(for structure: CIFStructure, rotation: simd_quatf, zoom: Float, showHydrogen: Bool) -> Entity? {
+        // Check if we should use ideal or model coordinates
+        // Use model coords if ANY atom is missing ideal coords (to avoid coordinate system mismatch)
+        let useIdealCoords = structure.atoms.allSatisfy { atom in
+            atom.idealX != nil && atom.idealY != nil && atom.idealZ != nil
+        }
+
         let atomsWithPositions = structure.atoms.compactMap { atom -> (CIFAtom, SIMD3<Float>)? in
             // Filter out hydrogen atoms if showHydrogen is false
             if !showHydrogen && atom.element.uppercased() == "H" {
                 return nil
             }
-            guard let position = atom.scenePosition else { return nil }
+            guard let position = atom.scenePosition(preferIdeal: useIdealCoords) else { return nil }
             return (atom, position)
         }
         
@@ -307,8 +313,20 @@ enum MoleculeSceneBuilder {
             return UIColor.systemYellow
         case "P":
             return UIColor.systemOrange
-        default:
+        case "ZN":
+            return UIColor.systemBrown
+        case "FE":
+            return UIColor.systemOrange
+        case "MG":
+            return UIColor.systemGreen
+        case "CA":
+            return UIColor.systemGray
+        case "NA", "K":
+            return UIColor.systemPurple
+        case "CL", "BR", "I":
             return UIColor.systemTeal
+        default:
+            return UIColor.systemIndigo
         }
     }
     
@@ -346,7 +364,9 @@ enum MoleculeSceneBuilder {
         } else {
             // Fallback to old scaling method if no bonds
             let maxRadius = centered.map { simd_length($0) }.max() ?? 1
-            scale = maxRadius > 0 ? 1.5 / maxRadius : 1
+            // For single atoms or molecules with zero spread, use scale of 1
+            // This ensures they remain visible at their natural size
+            scale = maxRadius > 0.001 ? 1.5 / maxRadius : 1
         }
 
         var mapped: [(CIFAtom, SIMD3<Float>)] = []
@@ -359,8 +379,16 @@ enum MoleculeSceneBuilder {
             lookup["\(entry.0.componentID).\(entry.0.label)"] = position
         }
 
-        let maxRadius = centered.map { simd_length($0) }.max() ?? 1
-        return (positions: mapped, lookup: lookup, maxRadius: maxRadius * scale)
+        var maxRadius = centered.map { simd_length($0) }.max() ?? 1
+        maxRadius = maxRadius * scale
+
+        // Ensure minimum radius for single atoms or very small molecules
+        // This prevents camera positioning issues
+        if maxRadius < 0.1 {
+            maxRadius = 0.5
+        }
+
+        return (positions: mapped, lookup: lookup, maxRadius: maxRadius)
     }
 }
 
@@ -374,10 +402,21 @@ private extension Transform {
 }
 
 private extension CIFAtom {
-    var scenePosition: SIMD3<Float>? {
-        let useX = idealX ?? x
-        let useY = idealY ?? y
-        let useZ = idealZ ?? z
+    func scenePosition(preferIdeal: Bool = true) -> SIMD3<Float>? {
+        let useX: Double?
+        let useY: Double?
+        let useZ: Double?
+
+        if preferIdeal {
+            useX = idealX ?? x
+            useY = idealY ?? y
+            useZ = idealZ ?? z
+        } else {
+            useX = x ?? idealX
+            useY = y ?? idealY
+            useZ = z ?? idealZ
+        }
+
         guard
             let x = useX,
             let y = useY,
