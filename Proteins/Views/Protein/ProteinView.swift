@@ -8,54 +8,33 @@
 import SwiftUI
 
 struct ProteinView: View {
-    var ligand: String
-    @State private var result: String = "Loading..."
+    @State private var viewModel: ViewModel
     
-    init(ligand: String) {
-        self.ligand = ligand
-        print(ligand)
-        return
+    init(ligandCode: String) {
+        let viewModel = ViewModel(ligandCode: ligandCode)
+        self._viewModel = .init(wrappedValue: viewModel)
     }
     
     var body: some View {
-        VStack {
-            Text(ligand)
-            Text(result)
-        }
-        .onAppear {
-            fetchresult()
-        }
-    }
-    
-    private func fetchresult() {
-        guard let url = URL(string: "https://files.rcsb.org/ligands/view/\(ligand)_ideal.sdf") else {
-            result = "Invalid URL"
-            return
-        }
-        
-        URLSession.shared.dataTask(with: url) { data, response, error in
-            if let error = error {
-                DispatchQueue.main.async {
-                    result = "Error: \(error.localizedDescription)"
-                }
-                return
-            }
-            if let data = data, let text = String(data: data, encoding: .utf8) {
-                DispatchQueue.main.async {
-                    result = text.prefix(500) + "..." // show preview
-                    print(text) // debug print
-                }
-            } else {
-                DispatchQueue.main.async {
-                    result = "No data"
+        NavigationStack {
+            VStack {
+                if let error = viewModel.loadingError {
+                    Text("Loading Error: \(error.localizedDescription)")
+                } else if let structure = viewModel.structure {
+                    MoleculeViewerScreen(structure: structure)
+                } else {
+                    Text("Loading...")
                 }
             }
-        }.resume()
+            .navigationTitle(viewModel.ligandCode)
+            .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await viewModel.loadLigand()
+            }
+        }
     }
-        
-
 }
 
 #Preview {
-    ProteinView(ligand: "13M")
+    ProteinView(ligandCode: "13M")
 }
