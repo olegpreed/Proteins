@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PinView: View {
     @EnvironmentObject private var authManager: PinFaceIdService
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
             ZStack {
@@ -28,5 +29,10 @@ struct PinView: View {
             }
             .animation(.easeInOut, value: authManager.isAuthenticated)
             .animation(.easeInOut, value: authManager.needsPINSetup)
+            .onChange(of: scenePhase, { oldValue, newValue in
+                if newValue == .background {
+                    authManager.isAuthenticated = false
+                }
+            })
         }
 }
