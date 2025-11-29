@@ -3,46 +3,59 @@ import simd
 
 struct MoleculeViewerScreen: View {
     let structure: CIFStructure
-    
+
     @State private var yaw: Float = 0
     @State private var pitch: Float = 0
     @State private var zoom: Float = 1
     @State private var lastDragTranslation: CGSize?
     @State private var lastMagnification: CGFloat = 1
-    
+    @StateObject private var coordinator = MoleculeSceneCoordinator()
+    @State private var showingAtomDetails = false
+
     private let minZoom: Float = 0.3
     private let maxZoom: Float = 3.0
     private let rotationSpeed: Float = 0.01
     
     var body: some View {
         VStack(spacing: 16) {
-            MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom)
+            MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom, coordinator: coordinator)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .gesture(dragGesture)
                 .simultaneousGesture(magnificationGesture)
-            
+                .onChange(of: coordinator.tappedAtom) { _, newAtom in
+                    showingAtomDetails = newAtom != nil
+                }
+                .sheet(isPresented: $showingAtomDetails, onDismiss: {
+                    coordinator.tappedAtom = nil
+                    coordinator.updateSelection(entityName: nil)
+                }) {
+                    if let atom = coordinator.tappedAtom {
+                        AtomDetailsSheet(atom: atom)
+                    }
+                }
+
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
-                    Spacer()
-                    Text("Zoom: \(String(format: "%.2f×", Double(zoom)))")
+                    HStack {
+                        Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
+                        Spacer()
+                        Text("Zoom: \(String(format: "%.2f×", Double(zoom)))")
+                    }
+                    Text("Drag to rotate, pinch to zoom, tap atoms for info.")
                 }
-                Text("Drag to rotate, pinch to zoom.")
-            }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal)
-            
-            HStack(spacing: 16) {
-                Button {
-                    resetView()
-                } label: {
-                    Label("Reset View", systemImage: "arrow.counterclockwise")
-                        .frame(maxWidth: .infinity)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+
+                HStack(spacing: 16) {
+                    Button {
+                        resetView()
+                    } label: {
+                        Label("Reset View", systemImage: "arrow.counterclockwise")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
-            }
-            .padding(.horizontal)
+                .padding(.horizontal)
         }
     }
     

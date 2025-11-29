@@ -5,7 +5,7 @@ struct CIFStructure {
     let bonds: [CIFBond]
 }
 
-struct CIFAtom: Identifiable {
+struct CIFAtom: Identifiable, Equatable {
     let componentID: String
     let label: String
     let alternateLabel: String?

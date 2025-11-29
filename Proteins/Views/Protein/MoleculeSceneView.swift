@@ -8,7 +8,7 @@ struct MoleculeSceneView: View {
     let structure: CIFStructure
     let rotation: simd_quatf
     let zoom: Float
-    @StateObject private var coordinator = MoleculeSceneCoordinator()
+    @ObservedObject var coordinator: MoleculeSceneCoordinator
     
     var body: some View {
         RealityView { content in
@@ -16,7 +16,8 @@ struct MoleculeSceneView: View {
                 content.remove(existing)
                 coordinator.rootEntity = nil
             }
-            
+
+            coordinator.structure = structure
             if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom) {
                 content.add(newRoot)
                 coordinator.rootEntity = newRoot
@@ -26,20 +27,134 @@ struct MoleculeSceneView: View {
                 content.remove(existing)
                 coordinator.rootEntity = nil
             }
-            
+
+            coordinator.structure = structure
             if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom) {
                 content.add(newRoot)
                 coordinator.rootEntity = newRoot
+
+                // Re-apply selection outline after scene update
+                coordinator.reapplySelection()
             }
         }
+        .gesture(
+            SpatialTapGesture()
+                .targetedToAnyEntity()
+                .onEnded { value in
+                    if value.entity.name.hasPrefix("atom:") {
+                        coordinator.tappedAtom = coordinator.findAtom(named: value.entity.name)
+                        coordinator.updateSelection(entityName: value.entity.name)
+                    } else {
+                        coordinator.tappedAtom = nil
+                        coordinator.updateSelection(entityName: nil)
+                    }
+                }
+        )
     }
 }
 
 final class MoleculeSceneCoordinator: ObservableObject {
     var rootEntity: Entity?
+    var structure: CIFStructure?
+    @Published var tappedAtom: CIFAtom?
+    @Published var tapLocation: CGPoint?
+    var selectedAtomEntity: Entity?
+    var outlineEntity: Entity?
+    var selectedAtomName: String? // Track selected atom across scene updates
+
+    func findAtom(named name: String) -> CIFAtom? {
+        guard let structure = structure else { return nil }
+        // Entity names are in format "atom:label"
+        let label = name.replacingOccurrences(of: "atom:", with: "")
+        return structure.atoms.first { $0.label == label }
+    }
+
+    func findAtomEntity(named name: String) -> Entity? {
+        guard let rootEntity = rootEntity else { return nil }
+        return findEntityInHierarchy(rootEntity, name: name)
+    }
+
+    private func findEntityInHierarchy(_ entity: Entity, name: String) -> Entity? {
+        if entity.name == name {
+            return entity
+        }
+        for child in entity.children {
+            if let found = findEntityInHierarchy(child, name: name) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    func updateSelection(entityName: String?) {
+        // Store the selected atom name for persistence across scene updates
+        selectedAtomName = entityName
+
+        // Remove old outline
+        if let outline = outlineEntity {
+            outline.removeFromParent()
+            outlineEntity = nil
+        }
+
+        guard let entityName = entityName,
+              let atomEntity = findAtomEntity(named: entityName) else {
+            selectedAtomEntity = nil
+            selectedAtomName = nil
+            return
+        }
+
+        selectedAtomEntity = atomEntity
+
+        // Create outline
+        let outline = MoleculeSceneBuilder.makeOutlineEntity()
+        outline.transform.translation = atomEntity.transform.translation
+        if let parent = atomEntity.parent {
+            parent.addChild(outline)
+            outlineEntity = outline
+        }
+    }
+
+    func reapplySelection() {
+        // Re-apply selection after scene recreation
+        if let selectedName = selectedAtomName {
+            updateSelection(entityName: selectedName)
+        }
+    }
 }
 
 enum MoleculeSceneBuilder {
+    static func makeOutlineEntity() -> Entity {
+        let entity = Entity()
+        entity.name = "selection-outline"
+
+        // Create a glowing outline using a slightly larger transparent sphere
+        let atomRadius: Float = 0.08
+        let outlineRadius: Float = atomRadius * 1.5
+
+        var outlineMaterial = UnlitMaterial(color: .systemYellow)
+        outlineMaterial.blending = .transparent(opacity: 0.4)
+
+        let outlineSphere = ModelEntity(
+            mesh: MeshResource.generateSphere(radius: outlineRadius),
+            materials: [outlineMaterial]
+        )
+
+        entity.addChild(outlineSphere)
+
+        // Add a second, thinner ring for extra visibility
+        var ringMaterial = UnlitMaterial(color: .systemYellow)
+        ringMaterial.blending = .transparent(opacity: 0.8)
+
+        let innerRing = ModelEntity(
+            mesh: MeshResource.generateSphere(radius: outlineRadius * 0.9),
+            materials: [ringMaterial]
+        )
+
+        entity.addChild(innerRing)
+
+        return entity
+    }
+
     static func makeScene(for structure: CIFStructure, rotation: simd_quatf, zoom: Float) -> Entity? {
         let atomsWithPositions = structure.atoms.compactMap { atom -> (CIFAtom, SIMD3<Float>)? in
             guard let position = atom.scenePosition else { return nil }
@@ -85,10 +200,15 @@ enum MoleculeSceneBuilder {
     private static func makeAtomEntity(atom: CIFAtom, position: SIMD3<Float>) -> ModelEntity {
         let mesh = MeshResource.generateSphere(radius: 0.08)
         let material = SimpleMaterial(color: color(for: atom.element), roughness: 0.25, isMetallic: false)
-        
+
         let entity = ModelEntity(mesh: mesh, materials: [material])
         entity.transform.translation = position
         entity.name = "atom:\(atom.label)"
+
+        // Add collision component for hit testing
+        entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: 0.08)]))
+        entity.components.set(InputTargetComponent())
+
         return entity
     }
     
