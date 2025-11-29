@@ -16,21 +16,19 @@ struct ProteinView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                if let error = viewModel.loadingError {
-                    Text("Loading Error: \(error.localizedDescription)")
-                } else if let structure = viewModel.structure {
-                    MoleculeViewerScreen(structure: structure)
-                } else {
-                    Text("Loading...")
-                }
+        VStack {
+            if let error = viewModel.loadingError {
+                Text("Loading Error: \(error.localizedDescription)")
+            } else if let structure = viewModel.structure {
+                MoleculeViewerScreen(structure: structure)
+            } else {
+                Text("Loading...")
             }
-            .navigationTitle(viewModel.ligandCode)
-            .navigationBarTitleDisplayMode(.inline)
-            .task {
-                await viewModel.loadLigand()
-            }
+        }
+        .navigationTitle(viewModel.ligandCode)
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await viewModel.loadLigand()
         }
     }
 }

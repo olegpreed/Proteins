@@ -26,9 +26,6 @@ struct LigandsListView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .navigationDestination(for: String.self) { ligand in
-                    ProteinView(ligandCode: ligand)
-                }
             }
             .padding(.vertical)
             .frame(maxWidth: .infinity)
@@ -36,10 +33,15 @@ struct LigandsListView: View {
         }
         .defaultScrollAnchor(.center, for: .alignment)
         .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
+        .navigationDestination(for: String.self) { ligand in
+            ProteinView(ligandCode: ligand)
+        }
     }
 }
 
 
 #Preview {
-    LigandsListView( ligands: (0..<100).map { "Ligand \($0)" })
+    NavigationStack {
+        LigandsListView(ligands: (0..<100).map { "Ligand \($0)" })
+    }
 }
