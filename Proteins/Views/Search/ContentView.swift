@@ -13,7 +13,7 @@ struct ContentView: View {
     @State private var showSettings = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 30) {
                 Image(systemName: "checkmark.shield.fill")
                     .font(.system(size: 80))

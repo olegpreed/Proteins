@@ -14,8 +14,10 @@ extension ProteinView {
     
     @Observable
     class ViewModel {
+        private static let ligandBaseURL = "https://files.rcsb.org/ligands/view/"
+
         let ligandCode: String
-        
+
         private(set) var structure: CIFStructure?
         private(set) var loadingError: LigandLoadError?
         
@@ -26,20 +28,18 @@ extension ProteinView {
         func loadLigand() async {
             do {
                 let cifData = try await fetchCIFData(for: ligandCode)
-                print(cifData)
                 let cif = try CIFParser.parse(from: cifData)
                 structure = cif.dataBlocks.first.map { $0.structure() }
                 
             } catch let error as LigandLoadError {
                 loadingError = error
             } catch {
-                print(error)
                 loadingError = .unknownError
             }
         }
         
         private func fetchCIFData(for ligandCode: String) async throws -> String {
-            guard let url = URL(string: "https://files.rcsb.org/ligands/view/\(ligandCode).cif") else {
+            guard let url = URL(string: "\(Self.ligandBaseURL)\(ligandCode).cif") else {
                 throw LigandLoadError.invalidCode
             }
             
