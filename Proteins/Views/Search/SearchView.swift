@@ -8,13 +8,11 @@
 import SwiftUI
 
 struct SearchView: View {
-    @ObservedObject var signInModel: SignInModel
     private var ligands: [String] = []
     @State private var filteredLigands: [String] = []
     @State private var searchText: String = ""
     
-    init(signInModel: SignInModel) {
-        self.signInModel = signInModel
+    init() {
         if let path = Bundle.main.path(forResource: "ligands", ofType: "txt") {
             do {
                 let content = try String(contentsOfFile: path, encoding: .utf8)
@@ -35,6 +33,10 @@ struct SearchView: View {
                 LigandsListView(ligands: filteredLigands)
                 SearchBarView(searchText: $searchText)
                 .padding(.leading)
+                VStack {
+                    Spacer()
+                   SettingsBarView()
+                }
             }
             .onChange(of: searchText) { oldValue, newValue in
                 if newValue.isEmpty {
@@ -50,6 +52,5 @@ struct SearchView: View {
 
 #Preview {
     SearchView(
-        signInModel: SignInModel()
     )
 }

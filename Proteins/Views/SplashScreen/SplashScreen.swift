@@ -27,13 +27,12 @@ class IntroRiveVM: RiveViewModel {
 }
 
 struct SplashScreen: View {
-    @ObservedObject var signInModel = SignInModel()
     @StateObject private var vm = IntroRiveVM()
     
     var body: some View {
         ZStack {
             if vm.finished {
-                SignInView(signInModel: signInModel)
+                SignInView()
                     .transition(.opacity)
             } else {
                 VStack {

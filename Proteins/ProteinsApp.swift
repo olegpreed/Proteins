@@ -6,24 +6,20 @@
 //
 
 import SwiftUI
-import FirebaseCore
-
-class AppDelegate: NSObject, UIApplicationDelegate {
-  func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-    FirebaseApp.configure()
-
-    return true
-  }
-}
 
 @main
 struct ProteinsApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var authState = AppleSignInService()
+    @StateObject private var authManager = PinFaceIdService()
     
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+            WindowGroup {
+                StartView()
+                    .environmentObject(authState)
+                    .environmentObject(authManager)
+                    .onAppear {
+                        authState.checkExistingSignIn()
+                    }
+            }
         }
-    }
 }
