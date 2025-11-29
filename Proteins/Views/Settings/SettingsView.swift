@@ -8,6 +8,7 @@
 import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var authManager: PinFaceIdService
+    @EnvironmentObject var authState: AppleSignInService
     @Environment(\.dismiss) var dismiss
     @State private var showDeleteConfirmation = false
     
@@ -36,6 +37,20 @@ struct SettingsView: View {
                         Text("1.0.0")
                             .foregroundColor(.secondary)
                     }
+                }
+                Button(action: {
+                    authState.signOut()
+                    authManager.reset()
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.right.square")
+                        Text("Logout")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.red)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                 }
             }
             .navigationTitle("Settings")
