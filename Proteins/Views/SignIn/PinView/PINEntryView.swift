@@ -2,11 +2,11 @@ import SwiftUI
 
 struct PINEntryView: View {
     let title: String
-    let subtitle: String?
     let pinLength: Int
     let onComplete: (String) -> Void
     let onBiometric: (() -> Void)?
     let showBiometric: Bool
+    @Namespace private var namespace
     
     @State private var pin: String = ""
     @State private var shake = false
@@ -20,7 +20,6 @@ struct PINEntryView: View {
         onBiometric: (() -> Void)? = nil
     ) {
         self.title = title
-        self.subtitle = subtitle
         self.pinLength = pinLength
         self.showBiometric = showBiometric
         self.onComplete = onComplete
@@ -29,78 +28,72 @@ struct PINEntryView: View {
     
     var body: some View {
         VStack(spacing: 40) {
-            // Header
             VStack(spacing: 8) {
                 Text(title)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+                    .font(.custom("IBMPlexMono-Regular", size: 30))
+                    .foregroundStyle(Color(.systemGray2))
             }
             .padding(.top, 60)
             
             // PIN dots
-            HStack(spacing: 20) {
-                ForEach(0..<pinLength, id: \.self) { index in
-                    Circle()
-                        .fill(index < pin.count ? Color.blue : Color.gray.opacity(0.3))
-                        .frame(width: 16, height: 16)
+            GlassEffectContainer(spacing: 18) {
+                HStack() {
+                    ForEach(0..<pin.count, id: \.self) { index in
+                        Circle()
+                            .fill(Color.clear)
+                            .frame(width: 18, height: 18)
+                            .glassEffect(.clear.tint(.accent.opacity(0.2)))
+                            .glassEffectID(index, in: namespace)
+                            .transition(.scale.combined(with: .opacity))
+                            .animation(.easeInOut(duration: 0.25), value: pin.count)
+                    }
                 }
+                .animation(.easeInOut(duration: 0.25), value: pin.count)
+                .frame(height: 18)
             }
             .offset(x: shake ? -10 : 0)
             .animation(shake ? .default.repeatCount(3).speed(6) : .default, value: shake)
             
-            Spacer()
-            
-            // Biometric button
-            if showBiometric, let onBiometric = onBiometric {
-                Button(action: onBiometric) {
-                    Image(systemName: "faceid")
-                        .font(.system(size: 32))
-                        .foregroundColor(.blue)
-                }
-                .padding(.bottom, 20)
-            }
-            
             // Number pad
-            VStack(spacing: 15) {
+            VStack() {
                 ForEach(0..<3) { row in
-                    HStack(spacing: 15) {
+                    HStack(spacing: 0) {
                         ForEach(1...3, id: \.self) { column in
                             let number = row * 3 + column
                             NumberButton(number: "\(number)") {
                                 addDigit("\(number)")
                             }
+                            .frame(maxWidth: .infinity)
                         }
                     }
+                    .frame(maxWidth: .infinity)
                 }
-                
-                // Bottom row
-                HStack(spacing: 15) {
-                    // Empty space
-                    Color.clear
-                        .frame(width: 80, height: 80)
-                    
-                    // Zero button
+
+                HStack(spacing: 0) {
+                    if showBiometric, let onBiometric = onBiometric {
+                        Button(action: onBiometric) {
+                            Image(systemName: "faceid")
+                                .font(.system(size: 30))
+                                .foregroundColor(.primary)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    else {
+                        Color.clear.frame(maxWidth: .infinity)
+                    }
                     NumberButton(number: "0") {
                         addDigit("0")
                     }
-                    
-                    // Delete button
+                    .frame(maxWidth: .infinity)
                     Button(action: deleteDigit) {
                         Image(systemName: "delete.left")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                            .frame(width: 80, height: 80)
+                            .font(.system(size: 30))
+                            .foregroundColor(.primary)
                     }
+                    .frame(maxWidth: .infinity)
                 }
+                .frame(height: 80)
             }
-            .padding(.bottom, 40)
         }
         .padding()
     }
@@ -142,20 +135,21 @@ struct NumberButton: View {
     var body: some View {
         Button(action: action) {
             Text(number)
-                .font(.title)
-                .fontWeight(.medium)
-                .foregroundColor(.primary)
+                .font(.custom("IBMPlexMono-Medium", size: 30))
                 .frame(width: 80, height: 80)
-                .background(Color.gray.opacity(0.1))
-                .clipShape(Circle())
+                .foregroundStyle(.foreground)
         }
+        //        .buttonSizing(.flexible)
+        //        .buttonBorderShape(.circle)
+        .glassEffect(.clear.interactive())
+        //        .buttonStyle(.glass)
+        
     }
 }
 
 #Preview {
     PINEntryView(
         title: "Enter PIN",
-        subtitle: "Enter your 4-digit PIN",
         showBiometric: true,
         onComplete: { pin in
             print("PIN entered: \(pin)")
