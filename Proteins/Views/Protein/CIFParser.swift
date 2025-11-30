@@ -1,3 +1,10 @@
+//
+//  CIFParser.swift
+//  Proteins
+//
+//  Created by Artem Forkunov on 30/11/25.
+//
+
 import Foundation
 
 enum CIFParserError: Error, LocalizedError {
@@ -404,12 +411,12 @@ extension CIFDataBlock {
                 )
             }
         }
-
+        
         // Fallback: parse single atom from individual tags (for single-atom ligands like ZN)
         guard let atomId = values(for: "_chem_comp_atom.atom_id")?.first else {
             return []
         }
-
+        
         let atom = CIFAtom(
             componentID: values(for: "_chem_comp_atom.comp_id")?.first ?? "",
             label: atomId,
@@ -425,7 +432,7 @@ extension CIFDataBlock {
             isAromatic: Self.parseFlag(values(for: "_chem_comp_atom.pdbx_aromatic_flag")?.first) ?? false,
             isBackboneAtom: Self.parseFlag(values(for: "_chem_comp_atom.pdbx_backbone_atom_flag")?.first) ?? false
         )
-
+        
         return [atom]
     }
     
