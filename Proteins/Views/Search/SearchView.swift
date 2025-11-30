@@ -32,10 +32,10 @@ struct SearchView: View {
             ZStack {
                 LigandsListView(ligands: filteredLigands)
                 SearchBarView(searchText: $searchText)
-                .padding(.leading)
+                    .padding(.leading)
                 VStack {
                     Spacer()
-                   SettingsBarView()
+                    SettingsBarView()
                 }
             }
             .onChange(of: searchText) { oldValue, newValue in
@@ -51,6 +51,5 @@ struct SearchView: View {
 }
 
 #Preview {
-    SearchView(
-    )
+    SearchView()
 }

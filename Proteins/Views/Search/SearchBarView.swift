@@ -13,6 +13,8 @@ struct SearchBarView: View {
     var body: some View {
         TextField("Search", text: $searchText)
             .font(.custom("IBMPlexMono-Regular", size: 17))
+            .textInputAutocapitalization(.characters)
+            .autocorrectionDisabled()
     }
 }
 

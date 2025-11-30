@@ -11,37 +11,37 @@ struct LigandsListView: View {
     var ligands: [String]
     
     var body: some View {
-            ScrollView{
-                VStack() {
-                    ForEach(ligands, id: \.self) { ligand in
-                        NavigationLink(value: ligand) {
-                            Text(ligand)
-                                .font(.custom("IBMPlexMono-Regular", size: 17))
-                                .padding()
-                                .scrollTransition(transition: { content, phase in
-                                    content
-        //                            .scaleEffect (phase.isIdentity ? 1 : 0.1)
-                                        .opacity(phase.isIdentity ? 1 : 0)
-                                })
-                        }
-                        .buttonStyle(.plain)
+        ScrollView{
+            VStack() {
+                ForEach(ligands, id: \.self) { ligand in
+                    NavigationLink(value: ligand) {
+                        Text(ligand)
+                            .font(.custom("IBMPlexMono-Regular", size: 17))
+                            .padding()
+                            .scrollTransition(transition: { content, phase in
+                                content
+//                                    .scaleEffect (phase.isIdentity ? 1 : 0.1)
+                                    .opacity(phase.isIdentity ? 1 : 0)
+                            })
                     }
-                    .navigationDestination(for: String.self) { ligand in
-                        ProteinView(ligand: ligand)
-                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.vertical)
-                .frame(maxWidth: .infinity)
-               
             }
-            .defaultScrollAnchor(.center, for: .alignment)
-            .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
-        
-        
+            .padding(.vertical)
+            .frame(maxWidth: .infinity)
+            
+        }
+        .defaultScrollAnchor(.center, for: .alignment)
+        .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
+        .navigationDestination(for: String.self) { ligand in
+            ProteinView(ligandCode: ligand)
+        }
     }
 }
 
 
 #Preview {
-    LigandsListView( ligands: (0..<100).map { "Ligand \($0)" })
+    NavigationStack {
+        LigandsListView(ligands: (0..<100).map { "Ligand \($0)" })
+    }
 }
