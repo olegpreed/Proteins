@@ -11,7 +11,7 @@ import simd
 struct MoleculeViewerScreen: View {
     let structure: CIFStructure
     let onFrameChange: ((CGRect) -> Void)?
-
+    
     @State private var yaw: Float
     @State private var pitch: Float
     @State private var zoom: Float = 1
@@ -20,15 +20,15 @@ struct MoleculeViewerScreen: View {
     @StateObject private var coordinator = MoleculeSceneCoordinator()
     @State private var showingAtomDetails = false
     @State private var showHydrogen = true
-
+    
     private let minZoom: Float = 0.3
     private let maxZoom: Float = 3.0
     private let rotationSpeed: Float = 0.01
-
+    
     init(structure: CIFStructure, onFrameChange: ((CGRect) -> Void)? = nil) {
         self.structure = structure
         self.onFrameChange = onFrameChange
-
+        
         // Calculate optimal initial viewing angles using PCA
         let optimalAngles = structure.calculateOptimalViewingAngles()
         _yaw = State(initialValue: optimalAngles.yaw)
