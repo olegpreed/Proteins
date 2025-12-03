@@ -18,10 +18,10 @@ class IntroRiveVM: RiveViewModel {
     @objc func onRiveEventReceived(onRiveEvent riveEvent: RiveEvent) {
         if riveEvent as? RiveGeneralEvent != nil {
             DispatchQueue.main.async {
-                                withAnimation(.easeInOut(duration: 0.5)) {
-                                    self.finished = true
-                                }
-                            }
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    self.finished = true
+                }
+            }
         }
     }
 }

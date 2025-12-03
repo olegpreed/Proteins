@@ -15,9 +15,9 @@ extension ProteinView {
     @Observable
     class ViewModel {
         private static let ligandBaseURL = "https://files.rcsb.org/ligands/view/"
-
+        
         let ligandCode: String
-
+        
         private(set) var structure: CIFStructure?
         private(set) var loadingError: LigandLoadError?
         

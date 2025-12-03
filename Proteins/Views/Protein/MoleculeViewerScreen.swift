@@ -1,68 +1,93 @@
+//
+//  MoleculeViewerScreen.swift
+//  Proteins
+//
+//  Created by Artem Forkunov on 30/11/25.
+//
+
 import SwiftUI
 import simd
 
 struct MoleculeViewerScreen: View {
     let structure: CIFStructure
-
-    @State private var yaw: Float = 0
-    @State private var pitch: Float = 0
+    let onFrameChange: ((CGRect) -> Void)?
+    
+    @State private var yaw: Float
+    @State private var pitch: Float
     @State private var zoom: Float = 1
     @State private var lastDragTranslation: CGSize?
     @State private var lastMagnification: CGFloat = 1
     @StateObject private var coordinator = MoleculeSceneCoordinator()
     @State private var showingAtomDetails = false
     @State private var showHydrogen = true
-
+    
     private let minZoom: Float = 0.3
     private let maxZoom: Float = 3.0
     private let rotationSpeed: Float = 0.01
     
+    init(structure: CIFStructure, onFrameChange: ((CGRect) -> Void)? = nil) {
+        self.structure = structure
+        self.onFrameChange = onFrameChange
+        
+        // Calculate optimal initial viewing angles using PCA
+        let optimalAngles = structure.calculateOptimalViewingAngles()
+        _yaw = State(initialValue: optimalAngles.yaw)
+        _pitch = State(initialValue: optimalAngles.pitch)
+    }
+    
     var body: some View {
         VStack(spacing: 16) {
-            MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom, showHydrogen: showHydrogen, coordinator: coordinator)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .gesture(dragGesture)
-                .simultaneousGesture(magnificationGesture)
-                .onChange(of: coordinator.tappedAtom) { _, newAtom in
-                    showingAtomDetails = newAtom != nil
-                }
-                .sheet(isPresented: $showingAtomDetails, onDismiss: {
-                    coordinator.tappedAtom = nil
-                    coordinator.updateSelection(entityName: nil)
-                }) {
-                    if let atom = coordinator.tappedAtom {
-                        AtomDetailsSheet(atom: atom)
+            GeometryReader { geometry in
+                MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom, showHydrogen: showHydrogen, coordinator: coordinator)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .gesture(dragGesture)
+                    .simultaneousGesture(magnificationGesture)
+                    .onChange(of: coordinator.tappedAtom) { _, newAtom in
+                        showingAtomDetails = newAtom != nil
                     }
-                }
-
+                    .sheet(isPresented: $showingAtomDetails, onDismiss: {
+                        coordinator.tappedAtom = nil
+                        coordinator.updateSelection(entityName: nil)
+                    }) {
+                        if let atom = coordinator.tappedAtom {
+                            AtomDetailsSheet(atom: atom)
+                        }
+                    }
+                    .onAppear {
+                        // Report global frame for screenshot cropping
+                        let globalFrame = geometry.frame(in: .global)
+                        onFrameChange?(globalFrame)
+                    }
+            }
+            
             VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
-                        Spacer()
-                        Text("Zoom: \(String(format: "%.2f×", Double(zoom)))")
-                    }
-                    Text("Drag to rotate, pinch to zoom, tap atoms for info.")
+                HStack {
+                    Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
+                    Spacer()
+                    Text("Zoom: \(String(format: "%.2f×", Double(zoom)))")
                 }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal)
-
-                HStack(spacing: 16) {
-                    Toggle(isOn: $showHydrogen) {
-                        Label("Hydrogen", systemImage: showHydrogen ? "eye" : "eye.slash")
-                    }
-                    .toggleStyle(.button)
-                    .buttonStyle(.bordered)
-
-                    Button {
-                        resetView()
-                    } label: {
-                        Label("Reset View", systemImage: "arrow.counterclockwise")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
+                Text("Drag to rotate, pinch to zoom, tap atoms for info.")
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal)
+            
+            HStack(spacing: 16) {
+                Toggle(isOn: $showHydrogen) {
+                    Label("Hydrogen", systemImage: showHydrogen ? "eye" : "eye.slash")
                 }
-                .padding(.horizontal)
+                .toggleStyle(.button)
+                .buttonStyle(.bordered)
+                
+                Button {
+                    resetView()
+                } label: {
+                    Label("Reset View", systemImage: "arrow.counterclockwise")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal)
         }
     }
     
@@ -101,8 +126,9 @@ struct MoleculeViewerScreen: View {
     }
     
     private func resetView() {
-        yaw = 0
-        pitch = 0
+        let optimalAngles = structure.calculateOptimalViewingAngles()
+        yaw = optimalAngles.yaw
+        pitch = optimalAngles.pitch
         zoom = 1
     }
     
