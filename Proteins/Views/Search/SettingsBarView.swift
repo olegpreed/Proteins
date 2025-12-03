@@ -12,7 +12,7 @@ struct SettingsBarView: View {
         HStack {
             Spacer()
             NavigationLink {
-                ContentView()
+                SettingsView()
             } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.title)

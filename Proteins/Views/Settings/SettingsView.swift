@@ -8,59 +8,65 @@
 import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var authManager: PinFaceIdService
+    @EnvironmentObject var authState: AppleSignInService
     @Environment(\.dismiss) var dismiss
-    @State private var showDeleteConfirmation = false
+    @State private var showSignOutConfirmation: Bool = false
     
     var body: some View {
-        NavigationView {
             List {
-                Section("Security") {
-                    HStack {
-                        Text("Biometric Type")
-                        Spacer()
-                        Text(authManager.biometricType())
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Button(role: .destructive, action: {
-                        showDeleteConfirmation = true
-                    }) {
-                        Label("Reset PIN", systemImage: "trash")
+                if case let .signedIn(user) = authState.status {
+                    Section("Account") {
+                        HStack {
+                            Text("Name")
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(user.fullName ?? "")
+                        }
+                        HStack {
+                            Text("Email")
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(user.email ?? "")
+                        }
                     }
                 }
-                
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundColor(.secondary)
+                Section("Security") {
+                    Button(action: {
+                        authManager.deletePIN()
+                        dismiss()
+                    }) {
+                        HStack{
+                            Text("Change Passcode")
+                        }
                     }
+                }
+                Button(role: .destructive,
+                       action: {
+                    showSignOutConfirmation = true
+                }) {
+                    HStack {
+                        Spacer()
+                        Text("Sign out")
+                        Spacer()
+                    }
+                }
+                .alert("", isPresented: $showSignOutConfirmation) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Sign out", role: .destructive) {
+                        authState.signOut()
+                        authManager.reset()
+                    }
+                } message: {
+                    Text("Are you sure you want to sign out?")
                 }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-            .alert("Reset PIN?", isPresented: $showDeleteConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Reset", role: .destructive) {
-                    authManager.deletePIN()
-                    dismiss()
-                }
-            } message: {
-                Text("This will delete your current PIN and log you out. You'll need to set up a new PIN.")
-            }
-        }
     }
 }
 
 #Preview {
     SettingsView()
         .environmentObject(PinFaceIdService())
+        .environmentObject(AppleSignInService())
 }
