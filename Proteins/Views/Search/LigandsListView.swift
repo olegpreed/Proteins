@@ -27,12 +27,10 @@ struct LigandsListView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.vertical)
             .frame(maxWidth: .infinity)
-            
         }
-        .defaultScrollAnchor(.center, for: .alignment)
-        .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
+//        .defaultScrollAnchor(.center, for: .alignment)
+//        .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
         .navigationDestination(for: String.self) { ligand in
             ProteinView(ligandCode: ligand)
         }

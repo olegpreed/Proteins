@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct SearchView: View {
+    @State private var searchText: String = ""
     private var ligands: [String] = []
     @State private var filteredLigands: [String] = []
-    @State private var searchText: String = ""
+    @SceneStorage("selectedTab") private var selectedTab: Int = 0
+   
     
     init() {
         if let path = Bundle.main.path(forResource: "ligands", ofType: "txt") {
@@ -31,12 +33,6 @@ struct SearchView: View {
         NavigationStack {
             ZStack {
                 LigandsListView(ligands: filteredLigands)
-                SearchBarView(searchText: $searchText)
-                    .padding(.leading)
-                VStack {
-                    Spacer()
-                    SettingsBarView()
-                }
             }
             .onChange(of: searchText) { oldValue, newValue in
                 if newValue.isEmpty {
@@ -45,11 +41,33 @@ struct SearchView: View {
                     filteredLigands = ligands.filter { $0.localizedCaseInsensitiveContains(newValue) }
                 }
             }
-            .ignoresSafeArea(.keyboard)
+            .navigationBarHidden(true)
+            .ignoresSafeArea(edges: .bottom)
         }
+        .searchable(text: $searchText, prompt: "Search Proteins")
     }
 }
 
 #Preview {
     SearchView()
 }
+
+struct IsSearchable: ViewModifier {
+    let selectedTab: Int
+    @Binding var filter: String
+    func body(content: Content) -> some View {
+        if selectedTab == 2 {
+            content
+                .searchable(text: $filter, prompt: "Search Proteins")
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func isSearchable(selectedTab: Int, filter: Binding<String>) -> some View {
+        modifier(IsSearchable(selectedTab: selectedTab, filter: filter))
+    }
+}
+    
