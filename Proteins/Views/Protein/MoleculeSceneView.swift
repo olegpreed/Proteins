@@ -139,7 +139,7 @@ enum MoleculeSceneBuilder {
         let atomRadius: Float = 0.05
         let outlineRadius: Float = atomRadius * 1.8
         
-        var outlineMaterial = UnlitMaterial(color: .systemYellow)
+        var outlineMaterial = UnlitMaterial(color: .accent)
         outlineMaterial.blending = .transparent(opacity: 0.4)
         
         let outlineSphere = ModelEntity(
@@ -150,7 +150,7 @@ enum MoleculeSceneBuilder {
         entity.addChild(outlineSphere)
         
         // Add a second, thinner ring for extra visibility
-        var ringMaterial = UnlitMaterial(color: .systemYellow)
+        var ringMaterial = UnlitMaterial(color: .accent)
         ringMaterial.blending = .transparent(opacity: 0.8)
         
         let innerRing = ModelEntity(
@@ -218,7 +218,7 @@ enum MoleculeSceneBuilder {
     private static func makeAtomEntity(atom: CIFAtom, position: SIMD3<Float>) -> ModelEntity {
         let atomRadius: Float = 0.05
         let mesh = MeshResource.generateSphere(radius: atomRadius)
-        let material = SimpleMaterial(color: color(for: atom.element), roughness: 0.25, isMetallic: false)
+        let material = SimpleMaterial(color: color(for: atom.element), roughness: 0.5, isMetallic: true)
         
         let entity = ModelEntity(mesh: mesh, materials: [material])
         entity.transform.translation = position
@@ -251,8 +251,7 @@ enum MoleculeSceneBuilder {
         container.transform.rotation = rotation
         container.name = "bond"
         
-        let primaryMaterial = SimpleMaterial(color: .systemGray3, roughness: 0.15, isMetallic: true)
-        let secondaryMaterial = SimpleMaterial(color: .systemGray4, roughness: 0.15, isMetallic: true)
+        let primaryMaterial = SimpleMaterial(color: .systemGray3, roughness: 0.9, isMetallic: true)
         let baseRadius: Float = 0.022
         let secondaryRadius: Float = 0.015
         let tertiaryRadius: Float = 0.013
@@ -267,12 +266,12 @@ enum MoleculeSceneBuilder {
         
         switch order {
         case .double:
-            addCylinder(radius: secondaryRadius, material: secondaryMaterial, offsetScale: 1)
-            addCylinder(radius: secondaryRadius, material: secondaryMaterial, offsetScale: -1)
+            addCylinder(radius: secondaryRadius, material: primaryMaterial, offsetScale: 1)
+            addCylinder(radius: secondaryRadius, material: primaryMaterial, offsetScale: -1)
         case .triple:
             addCylinder(radius: baseRadius * 0.9, material: primaryMaterial, offsetScale: 0)
-            addCylinder(radius: tertiaryRadius, material: secondaryMaterial, offsetScale: 1)
-            addCylinder(radius: tertiaryRadius, material: secondaryMaterial, offsetScale: -1)
+            addCylinder(radius: tertiaryRadius, material: primaryMaterial, offsetScale: 1)
+            addCylinder(radius: tertiaryRadius, material: primaryMaterial, offsetScale: -1)
         default:
             addCylinder(radius: baseRadius, material: primaryMaterial, offsetScale: 0)
         }
@@ -311,7 +310,7 @@ enum MoleculeSceneBuilder {
         case "H":
             return UIColor.white
         case "C":
-            return UIColor.systemGray2
+            return UIColor.systemGray4
         case "N":
             return UIColor.systemBlue
         case "O":

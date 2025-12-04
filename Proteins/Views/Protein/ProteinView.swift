@@ -12,6 +12,8 @@ import WebKit
 struct ProteinView: View {
     @State private var viewModel: ViewModel
     @State private var sceneFrame: CGRect = .zero
+    @State private var showHydrogen = false
+    @State private var resetTrigger = false
     
     init(ligandCode: String) {
         let viewModel = ViewModel(ligandCode: ligandCode)
@@ -19,31 +21,53 @@ struct ProteinView: View {
     }
     
     var body: some View {
-        VStack {
-            if let error = viewModel.loadingError {
-                Text("Loading Error: \(error.localizedDescription)")
-            } else if let structure = viewModel.structure {
-                MoleculeViewerScreen(structure: structure, onFrameChange: { frame in
-                    sceneFrame = frame
-                })
-            } else {
-                Text("Loading...")
-            }
-        }
-        .navigationTitle(viewModel.ligandCode)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    shareLigand()
-                } label: {
-                    Label("Share", systemImage: "square.and.arrow.up")
+//        NavigationStack {
+            VStack {
+                if let error = viewModel.loadingError {
+                    Text("Loading Error: \(error.localizedDescription)")
+                } else if let structure = viewModel.structure {
+                    MoleculeViewerScreen(structure: structure,
+                                         onFrameChange: { frame in
+                        sceneFrame = frame
+                    },
+                                         showHydrogen: $showHydrogen,
+                                         resetTrigger: $resetTrigger
+                    )
+                } else {
+                    Text("Loading...")
                 }
             }
-        }
-        .task {
-            await viewModel.loadLigand()
-        }
+            .navigationTitle(viewModel.ligandCode)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        shareLigand()
+                    } label: {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    Button {
+                        resetTrigger.toggle()
+                    } label: {
+                        Label("Reset View", systemImage: "arrow.counterclockwise")
+                    }
+                }
+                ToolbarSpacer(placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) {
+                    Button {
+                        showHydrogen.toggle()
+                    } label: {
+                        Label(showHydrogen ? "Hide Details" : "Show Details",
+                              systemImage: showHydrogen ? "microbe" : "circle")
+                    }
+                }
+            }
+            .task {
+                await viewModel.loadLigand()
+            }
+//        }
     }
     
     private func shareLigand() {
@@ -126,5 +150,5 @@ struct ProteinView: View {
 }
 
 #Preview {
-    ProteinView(ligandCode: "13M")
+    ProteinView(ligandCode: "13R")
 }

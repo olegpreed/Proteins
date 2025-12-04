@@ -15,8 +15,7 @@ struct PinView: View {
             ZStack {
                 if authManager.isAuthenticated {
                     // User is authenticated - show main content
-                    SearchView()
-                        .environmentObject(authManager)
+                    MainView()
                 } else if authManager.needsPINSetup {
                     // First time user - needs to setup PIN
                     PINSetupView()
