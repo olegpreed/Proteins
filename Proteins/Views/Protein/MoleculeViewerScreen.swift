@@ -12,6 +12,9 @@ struct MoleculeViewerScreen: View {
     let structure: CIFStructure
     let onFrameChange: ((CGRect) -> Void)?
     
+    @Binding var showHydrogen: Bool
+    @Binding var resetTrigger: Bool
+    
     @State private var yaw: Float
     @State private var pitch: Float
     @State private var zoom: Float = 1
@@ -19,21 +22,30 @@ struct MoleculeViewerScreen: View {
     @State private var lastMagnification: CGFloat = 1
     @StateObject private var coordinator = MoleculeSceneCoordinator()
     @State private var showingAtomDetails = false
-    @State private var showHydrogen = true
     
     private let minZoom: Float = 0.3
     private let maxZoom: Float = 3.0
     private let rotationSpeed: Float = 0.01
     
-    init(structure: CIFStructure, onFrameChange: ((CGRect) -> Void)? = nil) {
+    init(
+        structure: CIFStructure,
+        onFrameChange: ((CGRect) -> Void)? = nil,
+        showHydrogen: Binding<Bool>,
+        resetTrigger: Binding<Bool>
+    ) {
         self.structure = structure
         self.onFrameChange = onFrameChange
-        
-        // Calculate optimal initial viewing angles using PCA
+
+        // Bindings
+        _showHydrogen = showHydrogen
+        _resetTrigger = resetTrigger
+
+        // Initial viewing angles
         let optimalAngles = structure.calculateOptimalViewingAngles()
         _yaw = State(initialValue: optimalAngles.yaw)
         _pitch = State(initialValue: optimalAngles.pitch)
     }
+
     
     var body: some View {
         VStack(spacing: 16) {
@@ -59,35 +71,39 @@ struct MoleculeViewerScreen: View {
                         onFrameChange?(globalFrame)
                     }
             }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
-                    Spacer()
-                    Text("Zoom: \(String(format: "%.2f×", Double(zoom)))")
-                }
-                Text("Drag to rotate, pinch to zoom, tap atoms for info.")
+            .onChange(of: resetTrigger) { _, _ in
+                resetView()
             }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal)
+            .ignoresSafeArea()
             
-            HStack(spacing: 16) {
-                Toggle(isOn: $showHydrogen) {
-                    Label("Hydrogen", systemImage: showHydrogen ? "eye" : "eye.slash")
-                }
-                .toggleStyle(.button)
-                .buttonStyle(.bordered)
-                
-                Button {
-                    resetView()
-                } label: {
-                    Label("Reset View", systemImage: "arrow.counterclockwise")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding(.horizontal)
+//            VStack(alignment: .leading, spacing: 4) {
+//                HStack {
+//                    Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
+//                    Spacer()
+//                    Text("Zoom: \(String(format: "%.2f×", Double(zoom)))")
+//                }
+//                Text("Drag to rotate, pinch to zoom, tap atoms for info.")
+//            }
+//            .font(.footnote)
+//            .foregroundStyle(.secondary)
+//            .padding(.horizontal)
+            
+//            HStack(spacing: 16) {
+//                Toggle(isOn: $showHydrogen) {
+//                    Label("Hydrogen", systemImage: showHydrogen ? "eye" : "eye.slash")
+//                }
+//                .toggleStyle(.button)
+//                .buttonStyle(.bordered)
+//                
+//                Button {
+//                    resetView()
+//                } label: {
+//                    Label("Reset View", systemImage: "arrow.counterclockwise")
+//                        .frame(maxWidth: .infinity)
+//                }
+//                .buttonStyle(.bordered)
+//            }
+//            .padding(.horizontal)
         }
     }
     
@@ -365,6 +381,6 @@ struct MoleculeViewerScreen: View {
     let structure = cif.dataBlocks.first.map { $0.structure() }
     
     if let structure {
-        MoleculeViewerScreen(structure: structure);
+        MoleculeViewerScreen(structure: structure, showHydrogen: .constant(true), resetTrigger: .constant(false))
     }
 }
