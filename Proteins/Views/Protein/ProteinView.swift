@@ -14,6 +14,8 @@ struct ProteinView: View {
     @State private var sceneFrame: CGRect = .zero
     @State private var showHydrogen = false
     @State private var resetTrigger = false
+    @State private var showErrorAlert = false
+    @Environment(\.dismiss) private var dismiss
     
     init(ligandCode: String) {
         let viewModel = ViewModel(ligandCode: ligandCode)
@@ -21,53 +23,70 @@ struct ProteinView: View {
     }
     
     var body: some View {
-//        NavigationStack {
-            VStack {
-                if let error = viewModel.loadingError {
-                    Text("Loading Error: \(error.localizedDescription)")
-                } else if let structure = viewModel.structure {
-                    MoleculeViewerScreen(structure: structure,
-                                         onFrameChange: { frame in
-                        sceneFrame = frame
-                    },
-                                         showHydrogen: $showHydrogen,
-                                         resetTrigger: $resetTrigger
-                    )
-                } else {
-                    Text("Loading...")
+        //        NavigationStack {
+        VStack {
+            if let structure = viewModel.structure {
+                MoleculeViewerScreen(structure: structure,
+                                     onFrameChange: { frame in
+                    sceneFrame = frame
+                },
+                                     showHydrogen: $showHydrogen,
+                                     resetTrigger: $resetTrigger
+                )
+                .transition(.opacity)
+            } else {
+                ProgressView()
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: viewModel.structure != nil)
+        .navigationTitle(viewModel.ligandCode)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    shareLigand()
+                } label: {
+                    Label("Share", systemImage: "square.and.arrow.up")
                 }
             }
-            .navigationTitle(viewModel.ligandCode)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        shareLigand()
-                    } label: {
-                        Label("Share", systemImage: "square.and.arrow.up")
-                    }
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    Button {
-                        resetTrigger.toggle()
-                    } label: {
-                        Label("Reset View", systemImage: "arrow.counterclockwise")
-                    }
-                }
-                ToolbarSpacer(placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Button {
-                        showHydrogen.toggle()
-                    } label: {
-                        Label(showHydrogen ? "Hide Details" : "Show Details",
-                              systemImage: showHydrogen ? "microbe" : "circle")
-                    }
+            ToolbarItem(placement: .bottomBar) {
+                Button {
+                    resetTrigger.toggle()
+                } label: {
+                    Label("Reset View", systemImage: "arrow.counterclockwise")
                 }
             }
-            .task {
-                await viewModel.loadLigand()
+            ToolbarSpacer(placement: .bottomBar)
+            ToolbarItem(placement: .bottomBar) {
+                Button {
+                    showHydrogen.toggle()
+                } label: {
+                    Label(showHydrogen ? "Hide Details" : "Show Details",
+                          systemImage: showHydrogen ? "microbe" : "circle")
+                }
             }
-//        }
+        }
+        .task {
+            await viewModel.loadLigand()
+            
+            if viewModel.loadingError != nil {
+                showErrorAlert = true
+            }
+        }
+        .alert("Loading Error",
+               isPresented: $showErrorAlert,
+               actions: {
+            Button("OK") {
+                dismiss()
+            }
+        },
+               message: {
+            if let error = viewModel.loadingError {
+                Text(error.localizedDescription)
+            }
+        }
+        )
+        //        }
     }
     
     private func shareLigand() {

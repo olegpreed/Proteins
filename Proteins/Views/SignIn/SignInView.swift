@@ -25,13 +25,6 @@ struct SignInView: View {
                     Text("Swifty-\nProteins")
                         .font(.custom("IBMPlexMono-Medium", size: 60))
                         .lineHeight(.tight)
-//                        .foregroundStyle(
-//                            LinearGradient(
-//                                colors: [Color("Pink"), Color("Blue")],
-//                                startPoint: .leading,
-//                                endPoint: .trailing
-//                            )
-//                        )
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
                     Spacer().frame(height: 20)

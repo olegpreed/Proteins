@@ -15,18 +15,6 @@ struct StartView: View {
                 switch authState.status {
                 case .signedIn:
                     PinView()
-                case .error(let message):
-                    VStack(spacing: 12) {
-                        Text("Something went wrong")
-                            .font(.headline)
-                        Text(message)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                        Button("Try again") {
-                            authState.signOut()
-                        }
-                    }
-                    .padding()
                 default:
                     SignInView().environmentObject(authState)
                 }
