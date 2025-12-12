@@ -3,7 +3,7 @@ import SwiftUI
 struct PINEntryView: View {
     let title: String
     let pinLength: Int
-    let onComplete: (String) -> Void
+    var onComplete: (String) -> Bool
     let onBiometric: (() -> Void)?
     let showBiometric: Bool
     @Namespace private var namespace
@@ -16,7 +16,7 @@ struct PINEntryView: View {
         subtitle: String? = nil,
         pinLength: Int = 4,
         showBiometric: Bool = false,
-        onComplete: @escaping (String) -> Void,
+        onComplete: @escaping (String) -> Bool,
         onBiometric: (() -> Void)? = nil
     ) {
         self.title = title
@@ -25,6 +25,8 @@ struct PINEntryView: View {
         self.onComplete = onComplete
         self.onBiometric = onBiometric
     }
+    
+    @State private var xoffset: CGFloat = 0
     
     var body: some View {
         VStack(spacing: 40) {
@@ -35,12 +37,11 @@ struct PINEntryView: View {
             }
             .padding(.top, 60)
             
-            // PIN dots
             GlassEffectContainer(spacing: 18) {
                 HStack() {
                     ForEach(0..<pin.count, id: \.self) { index in
                         Circle()
-                            .fill(Color.clear)
+                            .fill(shake ? Color.red.opacity(0.3) : Color.clear)
                             .frame(width: 18, height: 18)
                             .glassEffect(.clear.tint(.accent.opacity(0.2)))
                             .glassEffectID(index, in: namespace)
@@ -51,9 +52,9 @@ struct PINEntryView: View {
                 .animation(.easeInOut(duration: 0.25), value: pin.count)
                 .frame(height: 18)
             }
-            .offset(x: shake ? -10 : 0)
-            .animation(shake ? .default.repeatCount(3).speed(6) : .default, value: shake)
-            
+            .offset(x: xoffset)
+            .onChange(of: shake) { oldValue, newValue in
+                withAnimation(.linear(duration: 0.1)) { xoffset = 7 }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.1){ withAnimation(.linear(duration: 0.1)) { xoffset = -10 } }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { withAnimation(.linear(duration: 0.1)) { xoffset = 0 } } }
             // Number pad
             VStack() {
                 ForEach(0..<3) { row in
@@ -68,7 +69,7 @@ struct PINEntryView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-
+                
                 HStack(spacing: 0) {
                     if showBiometric, let onBiometric = onBiometric {
                         Button(action: onBiometric) {
@@ -96,6 +97,12 @@ struct PINEntryView: View {
             }
         }
         .padding()
+        .sensoryFeedback(.error, trigger: shake) { old, new in
+            if new == true && old == false {
+                return true
+            }
+            return false
+        }
     }
     
     private func addDigit(_ digit: String) {
@@ -103,11 +110,19 @@ struct PINEntryView: View {
         pin += digit
         
         if pin.count == pinLength {
-            // Small delay before callback for better UX
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                onComplete(pin)
+            let success = onComplete(pin)
+            if !success {
+                triggerShake()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    reset()
+                }
             }
         }
+    }
+    
+    func vibrateError() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.error)
     }
     
     private func deleteDigit() {
@@ -153,6 +168,7 @@ struct NumberButton: View {
         showBiometric: true,
         onComplete: { pin in
             print("PIN entered: \(pin)")
+            return true
         },
         onBiometric: {
             print("Biometric tapped")

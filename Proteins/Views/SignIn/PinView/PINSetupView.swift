@@ -24,6 +24,7 @@ struct PINSetupView: View {
                         withAnimation {
                             currentStep = .confirm
                         }
+                        return true
                     }
                 )
                 .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
@@ -51,7 +52,7 @@ struct PINSetupView: View {
         }
     }
     
-    private func confirmPIN(_ pin: String) {
+    private func confirmPIN(_ pin: String) -> Bool {
         if pin == firstPIN {
             // PINs match, save it
             if authManager.setupPIN(pin) {
@@ -60,10 +61,13 @@ struct PINSetupView: View {
                 errorMessage = "Failed to save PIN. Please try again."
                 showError = true
             }
+            return true
+            
         } else {
             // PINs don't match
             errorMessage = "PINs don't match. Please try again."
             showError = true
+            return false
         }
     }
 }

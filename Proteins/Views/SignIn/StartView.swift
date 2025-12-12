@@ -18,8 +18,6 @@ struct StartView: View {
                 default:
                     SignInView().environmentObject(authState)
                 }
-                
             }
-//            SearchView()
         }
 }
