@@ -16,6 +16,7 @@ struct PinView: View {
                 if authManager.isAuthenticated {
                     // User is authenticated - show main content
                     MainView()
+                        .transition(.opacity)
                 } else if authManager.needsPINSetup {
                     // First time user - needs to setup PIN
                     PINSetupView()

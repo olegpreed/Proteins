@@ -14,7 +14,7 @@ struct ProteinsApp: App {
     
     var body: some Scene {
             WindowGroup {
-                StartView()
+                SplashScreen()
                     .environmentObject(authState)
                     .environmentObject(authManager)
                     .onAppear {

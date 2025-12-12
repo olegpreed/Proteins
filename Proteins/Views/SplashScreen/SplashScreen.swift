@@ -32,7 +32,7 @@ struct SplashScreen: View {
     var body: some View {
         ZStack {
             if vm.finished {
-                SignInView()
+                StartView()
                     .transition(.opacity)
             } else {
                 VStack {
@@ -41,6 +41,7 @@ struct SplashScreen: View {
                 .frame(maxHeight: 128)
             }
         }
+        .animation(.easeInOut, value: vm.finished)
     }
 }
 
