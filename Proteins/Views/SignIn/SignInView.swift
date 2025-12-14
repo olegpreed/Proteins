@@ -5,23 +5,23 @@
 //  Created by Oleg on 8/15/25.
 //
 
-import SwiftUI
 import LocalAuthentication
+import SwiftUI
 
 struct SignInView: View {
     @EnvironmentObject private var authState: AppleSignInService
     @Environment(\.colorScheme) var colorScheme
-    
+
     @State private var username: String = ""
     @State private var password: String = ""
-    
+
     var body: some View {
-        ZStack() {
+        ZStack {
             MoleculeView()
                 .ignoresSafeArea()
-            VStack(){
+            VStack {
                 Spacer()
-                VStack() {
+                VStack {
                     Text("Swifty-\nProteins")
                         .font(.custom("IBMPlexMono-Medium", size: 60))
                         .lineHeight(.tight)
@@ -34,7 +34,7 @@ struct SignInView: View {
                         .padding(.bottom, 15)
                         .foregroundStyle(
                             .gray
-                                               )
+                        )
                     SignInWithAppleButtonView().environmentObject(authState)
                     Spacer().frame(height: 20)
                 }
@@ -51,22 +51,22 @@ struct SignInView: View {
             .ignoresSafeArea()
         }
     }
-    
-       private var gradientColors: [Color] {
-           if colorScheme == .dark {
-               return [
-                   Color.black.opacity(0.0),
-                   Color.black.opacity(0.9),
-                   Color.black.opacity(1.0)
-               ]
-           } else {
-               return [
-                   Color.white.opacity(0.0),
-                   Color.white.opacity(0.9),
-                   Color.white.opacity(1.0)
-               ]
-           }
-       }
+
+    private var gradientColors: [Color] {
+        if colorScheme == .dark {
+            [
+                Color.black.opacity(0.0),
+                Color.black.opacity(0.9),
+                Color.black.opacity(1.0),
+            ]
+        } else {
+            [
+                Color.white.opacity(0.0),
+                Color.white.opacity(0.9),
+                Color.white.opacity(1.0),
+            ]
+        }
+    }
 }
 
 #Preview {

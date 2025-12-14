@@ -5,13 +5,13 @@
 //  Created by Oleg on 11/26/25.
 //
 
-import SwiftUI
 import RealityKit
+import SwiftUI
 
 struct MoleculeView: UIViewRepresentable {
     @Environment(\.colorScheme) private var colorScheme
 
-    func makeUIView(context: Context) -> ARView {
+    func makeUIView(context _: Context) -> ARView {
         let arView = ARView(frame: .zero)
         arView.environment.background = .color(colorScheme == .dark ? .black : .white)
 
@@ -29,7 +29,7 @@ struct MoleculeView: UIViewRepresentable {
         return arView
     }
 
-    func updateUIView(_ uiView: ARView, context: Context) {
+    func updateUIView(_ uiView: ARView, context _: Context) {
         uiView.environment.background = .color(colorScheme == .dark ? .black : .white)
     }
 

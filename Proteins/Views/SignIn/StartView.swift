@@ -10,14 +10,14 @@ import SwiftUI
 struct StartView: View {
     @EnvironmentObject private var authState: AppleSignInService
 
-        var body: some View {
-            Group {
-                switch authState.status {
-                case .signedIn:
-                    PinView()
-                default:
-                    SignInView().environmentObject(authState)
-                }
+    var body: some View {
+        Group {
+            switch authState.status {
+            case .signedIn:
+                PinView()
+            default:
+                SignInView().environmentObject(authState)
             }
         }
+    }
 }

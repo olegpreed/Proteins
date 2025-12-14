@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SearchBarView: View {
     @Binding var searchText: String
-    
+
     var body: some View {
         TextField("Search", text: $searchText)
             .font(.custom("IBMPlexMono-Regular", size: 17))

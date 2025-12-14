@@ -5,16 +5,16 @@
 //  Created by Artem Forkunov on 30/11/25.
 //
 
-import SwiftUI
 import simd
+import SwiftUI
 
 struct MoleculeViewerScreen: View {
     let structure: CIFStructure
     let onFrameChange: ((CGRect) -> Void)?
-    
+
     @Binding var showHydrogen: Bool
     @Binding var resetTrigger: Bool
-    
+
     @State private var yaw: Float
     @State private var pitch: Float
     @State private var zoom: Float = 1
@@ -22,11 +22,11 @@ struct MoleculeViewerScreen: View {
     @State private var lastMagnification: CGFloat = 1
     @StateObject private var coordinator = MoleculeSceneCoordinator()
     @State private var showingAtomDetails = false
-    
+
     private let minZoom: Float = 0.3
     private let maxZoom: Float = 3.0
     private let rotationSpeed: Float = 0.01
-    
+
     init(
         structure: CIFStructure,
         onFrameChange: ((CGRect) -> Void)? = nil,
@@ -46,7 +46,6 @@ struct MoleculeViewerScreen: View {
         _pitch = State(initialValue: optimalAngles.pitch)
     }
 
-    
     var body: some View {
         VStack(spacing: 16) {
             GeometryReader { geometry in
@@ -75,7 +74,7 @@ struct MoleculeViewerScreen: View {
                 resetView()
             }
             .ignoresSafeArea()
-            
+
 //            VStack(alignment: .leading, spacing: 4) {
 //                HStack {
 //                    Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
@@ -87,14 +86,14 @@ struct MoleculeViewerScreen: View {
 //            .font(.footnote)
 //            .foregroundStyle(.secondary)
 //            .padding(.horizontal)
-            
+
 //            HStack(spacing: 16) {
 //                Toggle(isOn: $showHydrogen) {
 //                    Label("Hydrogen", systemImage: showHydrogen ? "eye" : "eye.slash")
 //                }
 //                .toggleStyle(.button)
 //                .buttonStyle(.bordered)
-//                
+//
 //                Button {
 //                    resetView()
 //                } label: {
@@ -106,13 +105,13 @@ struct MoleculeViewerScreen: View {
 //            .padding(.horizontal)
         }
     }
-    
+
     private var currentRotation: simd_quatf {
         let yawQuat = simd_quatf(angle: yaw, axis: SIMD3<Float>(0, 1, 0))
         let pitchQuat = simd_quatf(angle: pitch, axis: SIMD3<Float>(1, 0, 0))
         return yawQuat * pitchQuat
     }
-    
+
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
@@ -128,7 +127,7 @@ struct MoleculeViewerScreen: View {
                 lastDragTranslation = nil
             }
     }
-    
+
     private var magnificationGesture: some Gesture {
         MagnificationGesture()
             .onChanged { value in
@@ -140,19 +139,19 @@ struct MoleculeViewerScreen: View {
                 lastMagnification = 1
             }
     }
-    
+
     private func resetView() {
         let optimalAngles = structure.calculateOptimalViewingAngles()
         yaw = optimalAngles.yaw
         pitch = optimalAngles.pitch
         zoom = 1
     }
-    
+
     private func formattedDegrees(_ radians: Float) -> String {
         let degrees = radians * 180 / .pi
         return String(format: "%.0f°", Double(degrees))
     }
-    
+
     private func clamp<T: Comparable>(_ value: T, min minValue: T, max maxValue: T) -> T {
         Swift.max(minValue, Swift.min(value, maxValue))
     }
@@ -376,10 +375,10 @@ struct MoleculeViewerScreen: View {
     13M "Initial release"  2012-08-24 RCSB
     #
     """
-    
+
     let cif = try! CIFParser.parse(from: exampleData)
     let structure = cif.dataBlocks.first.map { $0.structure() }
-    
+
     if let structure {
         MoleculeViewerScreen(structure: structure, showHydrogen: .constant(true), resetTrigger: .constant(false))
     }

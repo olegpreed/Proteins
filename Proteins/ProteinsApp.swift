@@ -11,15 +11,15 @@ import SwiftUI
 struct ProteinsApp: App {
     @StateObject private var authState = AppleSignInService()
     @StateObject private var authManager = PinFaceIdService()
-    
+
     var body: some Scene {
-            WindowGroup {
-                SplashScreen()
-                    .environmentObject(authState)
-                    .environmentObject(authManager)
-                    .onAppear {
-                        authState.checkExistingSignIn()
-                    }
-            }
+        WindowGroup {
+            SplashScreen()
+                .environmentObject(authState)
+                .environmentObject(authManager)
+                .onAppear {
+                    authState.checkExistingSignIn()
+                }
         }
+    }
 }

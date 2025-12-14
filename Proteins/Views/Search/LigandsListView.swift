@@ -9,10 +9,10 @@ import SwiftUI
 
 struct LigandsListView: View {
     var ligands: [String]
-    
+
     var body: some View {
-        ScrollView{
-            VStack() {
+        ScrollView {
+            VStack {
                 ForEach(ligands, id: \.self) { ligand in
                     NavigationLink(value: ligand) {
                         Text(ligand)
@@ -38,9 +38,8 @@ struct LigandsListView: View {
     }
 }
 
-
 #Preview {
     NavigationStack {
-        LigandsListView(ligands: (0..<10).map { "Ligand \($0)" })
+        LigandsListView(ligands: (0 ..< 10).map { "Ligand \($0)" })
     }
 }

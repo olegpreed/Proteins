@@ -1,5 +1,5 @@
 //
-//  AuthState.swift
+//  AppleSignInService.swift
 //  Proteins
 //
 //  Created by Oleg on 11/5/25.
@@ -32,11 +32,27 @@ final class AppleSignInService: NSObject, ObservableObject {
     func signIn() {
         status = .loading
 
+        // Bypass Apple Sign In for development/testing
+        if FeatureFlags.bypassAppleSignIn {
+            let mockUser = User(
+                id: FeatureFlags.MockUser.id,
+                email: FeatureFlags.MockUser.email,
+                fullName: FeatureFlags.MockUser.fullName
+            )
+
+            UserDefaults.standard.set(mockUser.id, forKey: "appleUserId")
+            UserDefaults.standard.set(mockUser.email, forKey: "appleUserEmail")
+            UserDefaults.standard.set(mockUser.fullName, forKey: "appleUserFullName")
+
+            status = .signedIn(mockUser)
+            return
+        }
+
         let request = ASAuthorizationAppleIDProvider().createRequest()
         request.requestedScopes = [.fullName, .email]
 
         let controller = ASAuthorizationController(authorizationRequests: [
-            request
+            request,
         ])
         controller.delegate = self
         controller.presentationContextProvider = self
@@ -55,9 +71,17 @@ final class AppleSignInService: NSObject, ObservableObject {
             status = .signedOut
             return
         }
-        
+
         let email = UserDefaults.standard.string(forKey: "appleUserEmail")
         let fullNameString = UserDefaults.standard.string(forKey: "appleUserFullName")
+
+        // Bypass Apple credential check for development/testing
+        if FeatureFlags.bypassAppleSignIn {
+            status = .signedIn(
+                User(id: userId, email: email, fullName: fullNameString)
+            )
+            return
+        }
 
         let provider = ASAuthorizationAppleIDProvider()
         provider.getCredentialState(forUserID: userId) {
@@ -80,26 +104,26 @@ final class AppleSignInService: NSObject, ObservableObject {
 
 extension AppleSignInService: ASAuthorizationControllerDelegate {
     func authorizationController(
-        controller: ASAuthorizationController,
+        controller _: ASAuthorizationController,
         didCompleteWithAuthorization authorization: ASAuthorization
     ) {
         authorizationController = nil
 
         guard
             let credential = authorization.credential
-                as? ASAuthorizationAppleIDCredential
+            as? ASAuthorizationAppleIDCredential
         else {
             status = .error("Unsupported credential type.")
             return
         }
-        
+
         let savedEmail = UserDefaults.standard.string(forKey: "appleUserEmail")
         let savedFullName = UserDefaults.standard.string(forKey: "appleUserFullName")
 
         let fullNameFromCredential: String? = {
             if let components = credential.fullName {
                 let formatted = PersonNameComponentsFormatter().string(from: components)
-                return formatted.isEmpty ? nil : formatted   // Avoid empty strings
+                return formatted.isEmpty ? nil : formatted // Avoid empty strings
             }
             return nil
         }()
@@ -122,7 +146,7 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
     }
 
     func authorizationController(
-        controller: ASAuthorizationController,
+        controller _: ASAuthorizationController,
         didCompleteWithError error: Error
     ) {
         authorizationController = nil
@@ -134,13 +158,13 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
 extension AppleSignInService:
     ASAuthorizationControllerPresentationContextProviding
 {
-    func presentationAnchor(for controller: ASAuthorizationController)
+    func presentationAnchor(for _: ASAuthorizationController)
         -> ASPresentationAnchor
     {
         guard
             let windowScene = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene })
-                .first(where: { $0.activationState == .foregroundActive }),
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
             let window = windowScene.windows.first(where: { $0.isKeyWindow })
         else {
             fatalError("No active window scene found")

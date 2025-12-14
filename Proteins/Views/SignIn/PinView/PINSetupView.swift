@@ -6,12 +6,12 @@ struct PINSetupView: View {
     @State private var firstPIN: String = ""
     @State private var showError = false
     @State private var errorMessage = ""
-    
+
     enum SetupStep {
         case create
         case confirm
     }
-    
+
     var body: some View {
         ZStack {
             if currentStep == .create {
@@ -51,7 +51,7 @@ struct PINSetupView: View {
             Text(errorMessage)
         }
     }
-    
+
     private func confirmPIN(_ pin: String) -> Bool {
         if pin == firstPIN {
             // PINs match, save it
@@ -62,7 +62,7 @@ struct PINSetupView: View {
                 showError = true
             }
             return true
-            
+
         } else {
             // PINs don't match
             errorMessage = "PINs don't match. Please try again."
