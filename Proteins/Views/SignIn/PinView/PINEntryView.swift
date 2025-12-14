@@ -7,13 +7,13 @@ struct PINEntryView: View {
     let onBiometric: (() -> Void)?
     let showBiometric: Bool
     @Namespace private var namespace
-    
+
     @State private var pin: String = ""
     @State private var shake = false
-    
+
     init(
         title: String,
-        subtitle: String? = nil,
+        subtitle _: String? = nil,
         pinLength: Int = 4,
         showBiometric: Bool = false,
         onComplete: @escaping (String) -> Bool,
@@ -25,9 +25,9 @@ struct PINEntryView: View {
         self.onComplete = onComplete
         self.onBiometric = onBiometric
     }
-    
+
     @State private var xoffset: CGFloat = 0
-    
+
     var body: some View {
         VStack(spacing: 40) {
             VStack(spacing: 8) {
@@ -36,10 +36,10 @@ struct PINEntryView: View {
                     .foregroundStyle(Color(.systemGray2))
             }
             .padding(.top, 60)
-            
+
             GlassEffectContainer(spacing: 18) {
-                HStack() {
-                    ForEach(0..<pin.count, id: \.self) { index in
+                HStack {
+                    ForEach(0 ..< pin.count, id: \.self) { index in
                         Circle()
                             .fill(shake ? Color.red.opacity(0.3) : Color.clear)
                             .frame(width: 18, height: 18)
@@ -53,13 +53,14 @@ struct PINEntryView: View {
                 .frame(height: 18)
             }
             .offset(x: xoffset)
-            .onChange(of: shake) { oldValue, newValue in
-                withAnimation(.linear(duration: 0.1)) { xoffset = 7 }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.1){ withAnimation(.linear(duration: 0.1)) { xoffset = -10 } }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { withAnimation(.linear(duration: 0.1)) { xoffset = 0 } } }
+            .onChange(of: shake) { _, _ in
+                withAnimation(.linear(duration: 0.1)) { xoffset = 7 }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { withAnimation(.linear(duration: 0.1)) { xoffset = -10 } }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { withAnimation(.linear(duration: 0.1)) { xoffset = 0 } }
+            }
             // Number pad
-            VStack() {
-                ForEach(0..<3) { row in
+            VStack {
+                ForEach(0 ..< 3) { row in
                     HStack(spacing: 0) {
-                        ForEach(1...3, id: \.self) { column in
+                        ForEach(1 ... 3, id: \.self) { column in
                             let number = row * 3 + column
                             NumberButton(number: "\(number)") {
                                 addDigit("\(number)")
@@ -69,17 +70,16 @@ struct PINEntryView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                
+
                 HStack(spacing: 0) {
-                    if showBiometric, let onBiometric = onBiometric {
+                    if showBiometric, let onBiometric {
                         Button(action: onBiometric) {
                             Image(systemName: "faceid")
                                 .font(.system(size: 30))
                                 .foregroundColor(.primary)
                         }
                         .frame(maxWidth: .infinity)
-                    }
-                    else {
+                    } else {
                         Color.clear.frame(maxWidth: .infinity)
                     }
                     NumberButton(number: "0") {
@@ -98,17 +98,17 @@ struct PINEntryView: View {
         }
         .padding()
         .sensoryFeedback(.error, trigger: shake) { old, new in
-            if new == true && old == false {
+            if new == true, old == false {
                 return true
             }
             return false
         }
     }
-    
+
     private func addDigit(_ digit: String) {
         guard pin.count < pinLength else { return }
         pin += digit
-        
+
         if pin.count == pinLength {
             let success = onComplete(pin)
             if !success {
@@ -119,25 +119,25 @@ struct PINEntryView: View {
             }
         }
     }
-    
+
     func vibrateError() {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.error)
     }
-    
+
     private func deleteDigit() {
         if !pin.isEmpty {
             pin.removeLast()
         }
     }
-    
+
     func triggerShake() {
         shake = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             shake = false
         }
     }
-    
+
     func reset() {
         pin = ""
     }
@@ -146,7 +146,7 @@ struct PINEntryView: View {
 struct NumberButton: View {
     let number: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(number)
@@ -158,7 +158,6 @@ struct NumberButton: View {
         //        .buttonBorderShape(.circle)
         .glassEffect(.clear.interactive())
         //        .buttonStyle(.glass)
-        
     }
 }
 

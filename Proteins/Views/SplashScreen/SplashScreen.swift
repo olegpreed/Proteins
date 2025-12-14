@@ -5,16 +5,16 @@
 //  Created by Oleg on 8/24/25.
 //
 
-import SwiftUI
 import RiveRuntime
+import SwiftUI
 
 class IntroRiveVM: RiveViewModel {
     @Published var finished = false
-    
+
     init() {
         super.init(fileName: "proteins", stateMachineName: "State Machine 1")
     }
-    
+
     @objc func onRiveEventReceived(onRiveEvent riveEvent: RiveEvent) {
         if riveEvent as? RiveGeneralEvent != nil {
             DispatchQueue.main.async {
@@ -28,7 +28,7 @@ class IntroRiveVM: RiveViewModel {
 
 struct SplashScreen: View {
     @StateObject private var vm = IntroRiveVM()
-    
+
     var body: some View {
         ZStack {
             if vm.finished {

@@ -6,9 +6,9 @@ struct PINLoginView: View {
     @State private var showError = false
     @State private var attempts = 0
     @State private var showLockoutAlert = false
-    
+
     private let maxAttempts = 5
-    
+
     var body: some View {
         VStack {
             PINEntryView(
@@ -24,7 +24,8 @@ struct PINLoginView: View {
             )
         }
         .alert("Too Many Attempts",
-               isPresented: $showLockoutAlert) {
+               isPresented: $showLockoutAlert)
+        {
             Button("OK") {
                 authManager.reset()
                 authState.signOut()
@@ -40,7 +41,7 @@ struct PINLoginView: View {
             }
         }
     }
-    
+
     private func verifyPIN(_ pin: String) -> Bool {
         if authManager.verifyPIN(pin) {
             attempts = 0
@@ -48,18 +49,18 @@ struct PINLoginView: View {
             return true
         } else {
             attempts += 1
-            
+
             if attempts >= maxAttempts {
                 showLockoutAlert = true
             }
             return false
         }
     }
-    
+
     private func authenticateWithBiometrics() {
         authManager.authenticateWithBiometrics { success, error in
             if !success {
-                if let error = error {
+                if let error {
                     print("Biometric authentication failed: \(error.localizedDescription)")
                 }
             }

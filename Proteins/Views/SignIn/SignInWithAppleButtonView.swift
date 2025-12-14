@@ -32,7 +32,7 @@ private struct SignInButtonRepresentable: UIViewRepresentable {
         return button
     }
 
-    func updateUIView(_ uiView: ASAuthorizationAppleIDButton, context: Context) {}
+    func updateUIView(_: ASAuthorizationAppleIDButton, context _: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(action: action)

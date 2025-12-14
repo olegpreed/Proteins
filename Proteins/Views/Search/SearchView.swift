@@ -12,29 +12,28 @@ struct SearchView: View {
     private var ligands: [String] = []
     @State private var filteredLigands: [String] = []
     @SceneStorage("selectedTab") private var selectedTab: Int = 0
-   
-    
+
     init() {
         if let path = Bundle.main.path(forResource: "ligands", ofType: "txt") {
             do {
                 let content = try String(contentsOfFile: path, encoding: .utf8)
-                self.ligands = content
+                ligands = content
                     .components(separatedBy: .newlines)
                     .filter { !$0.isEmpty }
-                self.filteredLigands = ligands
+                filteredLigands = ligands
             } catch {
                 print("Error reading ligands.txt: \(error)")
             }
         }
         _filteredLigands = State(initialValue: ligands)
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 LigandsListView(ligands: filteredLigands)
             }
-            .onChange(of: searchText) { oldValue, newValue in
+            .onChange(of: searchText) { _, newValue in
                 if newValue.isEmpty {
                     filteredLigands = ligands
                 } else {
@@ -70,4 +69,3 @@ extension View {
         modifier(IsSearchable(selectedTab: selectedTab, filter: filter))
     }
 }
-    
