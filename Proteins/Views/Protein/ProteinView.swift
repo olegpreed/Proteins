@@ -23,7 +23,6 @@ struct ProteinView: View {
     }
 
     var body: some View {
-        //        NavigationStack {
         VStack {
             if let structure = viewModel.structure {
                 MoleculeViewerScreen(structure: structure,
@@ -84,29 +83,10 @@ struct ProteinView: View {
                        Text(error.localizedDescription)
                    }
                })
-        //        }
     }
 
     private func shareLigand() {
-        let ligandCode = viewModel.ligandCode
-        let rcsbURL = URL(string: "https://www.rcsb.org/ligand/\(ligandCode)")!
-
-        // Capture screenshot using window snapshot (works with RealityKit)
-        let screenshot = captureWindowScreenshot()
-
-        var items: [Any] = [
-            "Ligand: \(ligandCode)",
-            rcsbURL,
-        ]
-
-        if let screenshot {
-            items.append(screenshot)
-        }
-
-        let activityVC = UIActivityViewController(
-            activityItems: items,
-            applicationActivities: nil
-        )
+        let activityVC = viewModel.createShareActivityController(sceneFrame: sceneFrame)
 
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let window = windowScene.windows.first,
@@ -130,42 +110,6 @@ struct ProteinView: View {
 
             presentingVC.present(activityVC, animated: true)
         }
-    }
-
-    private func captureWindowScreenshot() -> UIImage? {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first
-        else {
-            return nil
-        }
-
-        // Capture full window
-        let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
-        let fullImage = renderer.image { _ in
-            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-        }
-
-        // Crop to just the 3D scene area (remove UI controls)
-        guard sceneFrame != .zero,
-              let cgImage = fullImage.cgImage
-        else {
-            return fullImage
-        }
-
-        // Convert frame to pixel coordinates (accounting for screen scale)
-        let scale = fullImage.scale
-        let cropRect = CGRect(
-            x: sceneFrame.origin.x * scale,
-            y: sceneFrame.origin.y * scale,
-            width: sceneFrame.size.width * scale,
-            height: sceneFrame.size.height * scale
-        )
-
-        guard let croppedCGImage = cgImage.cropping(to: cropRect) else {
-            return fullImage
-        }
-
-        return UIImage(cgImage: croppedCGImage, scale: scale, orientation: fullImage.imageOrientation)
     }
 }
 
