@@ -30,9 +30,8 @@ struct SearchView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                LigandsListView(ligands: filteredLigands)
-            }
+            LigandsListView(ligands: filteredLigands)
+                .padding(.top, 30)
             .onChange(of: searchText) { _, newValue in
                 if newValue.isEmpty {
                     filteredLigands = ligands
@@ -40,8 +39,17 @@ struct SearchView: View {
                     filteredLigands = ligands.filter { $0.localizedCaseInsensitiveContains(newValue) }
                 }
             }
-            .navigationBarHidden(true)
-            .ignoresSafeArea(edges: .bottom)
+//            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                }
+            }
+            .ignoresSafeArea()
         }
         .searchable(text: $searchText, prompt: "Search Proteins")
     }
