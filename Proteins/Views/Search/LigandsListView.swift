@@ -20,7 +20,7 @@ struct LigandsListView: View {
                             .padding()
                             .scrollTransition(transition: { content, phase in
                                 content
-//                                    .scaleEffect (phase.isIdentity ? 1 : 0.1)
+                                    .blur(radius: phase.isIdentity ? 0 : 10)
                                     .opacity(phase.isIdentity ? 1 : 0)
                             })
                     }
@@ -40,6 +40,6 @@ struct LigandsListView: View {
 
 #Preview {
     NavigationStack {
-        LigandsListView(ligands: (0 ..< 10).map { "Ligand \($0)" })
+        LigandsListView(ligands: (0 ..< 30).map { "Ligand \($0)" })
     }
 }
