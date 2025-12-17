@@ -28,6 +28,8 @@ struct LigandsListView: View {
                 }
             }
             .frame(maxWidth: .infinity)
+            .padding(.top, 90)
+            .padding(.bottom, 50)
         }
         .defaultScrollAnchor(.center, for: .alignment)
         .navigationDestination(for: String.self) { ligand in

@@ -31,6 +31,7 @@ struct SearchView: View {
     var body: some View {
         NavigationStack {
             LigandsListView(ligands: filteredLigands)
+                .ignoresSafeArea(edges: .top)
                 .onChange(of: searchText) { _, newValue in
                     if newValue.isEmpty {
                         filteredLigands = ligands
@@ -48,7 +49,7 @@ struct SearchView: View {
                     }
                 }
         }
-        .searchable(text: $searchText, prompt: "Search Proteins")
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search Proteins")
     }
 }
 
