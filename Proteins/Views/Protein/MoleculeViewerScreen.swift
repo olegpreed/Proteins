@@ -116,8 +116,6 @@ struct MoleculeViewerScreen: View {
     }
 }
 
-// MARK: - Gesture Handler View
-
 struct GestureHandlerView: UIViewRepresentable {
     let onRotate: (Float, Float) -> Void
     let onPan: (CGFloat, CGFloat) -> Void
