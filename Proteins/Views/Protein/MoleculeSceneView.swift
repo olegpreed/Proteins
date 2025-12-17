@@ -307,15 +307,13 @@ enum MoleculeSceneBuilder {
         let atomRadius: Float = 0.05
         let bondLength = max(distance - (atomRadius * 1.6), 0.001)
 
-        let bondEntity: Entity
-
-        switch order {
+        let bondEntity: Entity = switch order {
         case .double, .aromatic:
-            bondEntity = createDoubleBondTemplate(height: bondLength, material: primaryMaterial)
+            createDoubleBondTemplate(height: bondLength, material: primaryMaterial)
         case .triple:
-            bondEntity = createTripleBondTemplate(height: bondLength, material: primaryMaterial)
+            createTripleBondTemplate(height: bondLength, material: primaryMaterial)
         default:
-            bondEntity = createSingleBondTemplate(height: bondLength, material: primaryMaterial)
+            createSingleBondTemplate(height: bondLength, material: primaryMaterial)
         }
 
         container.addChild(bondEntity)
