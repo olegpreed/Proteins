@@ -40,6 +40,13 @@ struct ProteinView: View {
         .navigationTitle(viewModel.ligandCode)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Label("Back", systemImage: "chevron.left")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     shareLigand()
@@ -83,6 +90,7 @@ struct ProteinView: View {
                        Text(error.localizedDescription)
                    }
                })
+        .navigationBarBackButtonHidden(true)
     }
 
     private func shareLigand() {
