@@ -54,6 +54,7 @@ struct MoleculeViewerScreen: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     GestureHandlerView(
+                        isEnabled: !showingAtomDetails,
                         onRotate: { deltaX, deltaY in
                             yaw += deltaX * rotationSpeed
                             pitch = clamp(pitch + deltaY * rotationSpeed, min: -.pi / 2, max: .pi / 2)
@@ -117,6 +118,7 @@ struct MoleculeViewerScreen: View {
 }
 
 struct GestureHandlerView: UIViewRepresentable {
+    let isEnabled: Bool
     let onRotate: (Float, Float) -> Void
     let onPan: (CGFloat, CGFloat) -> Void
     let onZoom: (Float) -> Void
@@ -139,6 +141,7 @@ struct GestureHandlerView: UIViewRepresentable {
         context.coordinator.onRotate = onRotate
         context.coordinator.onPan = onPan
         context.coordinator.onZoom = onZoom
+        context.coordinator.setGesturesEnabled(isEnabled)
         context.coordinator.installGestures(on: uiView)
     }
 
@@ -232,6 +235,12 @@ struct GestureHandlerView: UIViewRepresentable {
             rotateGesture = nil
             panGesture = nil
             pinchGesture = nil
+        }
+
+        func setGesturesEnabled(_ enabled: Bool) {
+            rotateGesture?.isEnabled = enabled
+            panGesture?.isEnabled = enabled
+            pinchGesture?.isEnabled = enabled
         }
 
         @objc func handleRotate(_ gesture: UIPanGestureRecognizer) {
