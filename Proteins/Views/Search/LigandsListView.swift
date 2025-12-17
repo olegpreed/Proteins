@@ -28,9 +28,10 @@ struct LigandsListView: View {
                 }
             }
             .frame(maxWidth: .infinity)
+            .padding(.top, 90)
+            .padding(.bottom, 50)
         }
         .defaultScrollAnchor(.center, for: .alignment)
-//        .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
         .navigationDestination(for: String.self) { ligand in
             ProteinView(ligandCode: ligand)
                 .toolbar(.hidden, for: .tabBar)

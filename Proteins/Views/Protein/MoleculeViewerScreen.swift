@@ -7,6 +7,7 @@
 
 import simd
 import SwiftUI
+import UIKit
 
 struct MoleculeViewerScreen: View {
     let structure: CIFStructure
@@ -18,8 +19,7 @@ struct MoleculeViewerScreen: View {
     @State private var yaw: Float
     @State private var pitch: Float
     @State private var zoom: Float = 1
-    @State private var lastDragTranslation: CGSize?
-    @State private var lastMagnification: CGFloat = 1
+    @State private var cameraOffset: SIMD2<Float> = .zero
     @StateObject private var coordinator = MoleculeSceneCoordinator()
     @State private var showingAtomDetails = false
 
@@ -49,60 +49,46 @@ struct MoleculeViewerScreen: View {
     var body: some View {
         VStack(spacing: 16) {
             GeometryReader { geometry in
-                MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom, showHydrogen: showHydrogen, coordinator: coordinator)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .gesture(dragGesture)
-                    .simultaneousGesture(magnificationGesture)
-                    .onChange(of: coordinator.tappedAtom) { _, newAtom in
-                        showingAtomDetails = newAtom != nil
-                    }
-                    .sheet(isPresented: $showingAtomDetails, onDismiss: {
-                        coordinator.tappedAtom = nil
-                        coordinator.updateSelection(entityName: nil)
-                    }) {
-                        if let atom = coordinator.tappedAtom {
-                            AtomDetailsSheet(atom: atom)
+                ZStack {
+                    MoleculeSceneView(structure: structure, rotation: currentRotation, zoom: zoom, cameraOffset: cameraOffset, showHydrogen: showHydrogen, coordinator: coordinator)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    GestureHandlerView(
+                        onRotate: { deltaX, deltaY in
+                            yaw += deltaX * rotationSpeed
+                            pitch = clamp(pitch + deltaY * rotationSpeed, min: -.pi / 2, max: .pi / 2)
+                        },
+                        onPan: { deltaX, deltaY in
+                            let panSensitivity: Float = 0.004
+                            cameraOffset.x -= Float(deltaX) * panSensitivity
+                            cameraOffset.y += Float(deltaY) * panSensitivity
+                        },
+                        onZoom: { scale in
+                            zoom = clamp(zoom * scale, min: minZoom, max: maxZoom)
                         }
+                    )
+                }
+                .onChange(of: coordinator.tappedAtom) { _, newAtom in
+                    showingAtomDetails = newAtom != nil
+                }
+                .sheet(isPresented: $showingAtomDetails, onDismiss: {
+                    coordinator.tappedAtom = nil
+                    coordinator.updateSelection(entityName: nil)
+                }) {
+                    if let atom = coordinator.tappedAtom {
+                        AtomDetailsSheet(atom: atom)
                     }
-                    .onAppear {
-                        // Report global frame for screenshot cropping
-                        let globalFrame = geometry.frame(in: .global)
-                        onFrameChange?(globalFrame)
-                    }
+                }
+                .onAppear {
+                    // Report global frame for screenshot cropping
+                    let globalFrame = geometry.frame(in: .global)
+                    onFrameChange?(globalFrame)
+                }
             }
             .onChange(of: resetTrigger) { _, _ in
                 resetView()
             }
             .ignoresSafeArea()
-
-//            VStack(alignment: .leading, spacing: 4) {
-//                HStack {
-//                    Text("Rotation: yaw \(formattedDegrees(yaw)), pitch \(formattedDegrees(pitch))")
-//                    Spacer()
-//                    Text("Zoom: \(String(format: "%.2f×", Double(zoom)))")
-//                }
-//                Text("Drag to rotate, pinch to zoom, tap atoms for info.")
-//            }
-//            .font(.footnote)
-//            .foregroundStyle(.secondary)
-//            .padding(.horizontal)
-
-//            HStack(spacing: 16) {
-//                Toggle(isOn: $showHydrogen) {
-//                    Label("Hydrogen", systemImage: showHydrogen ? "eye" : "eye.slash")
-//                }
-//                .toggleStyle(.button)
-//                .buttonStyle(.bordered)
-//
-//                Button {
-//                    resetView()
-//                } label: {
-//                    Label("Reset View", systemImage: "arrow.counterclockwise")
-//                        .frame(maxWidth: .infinity)
-//                }
-//                .buttonStyle(.bordered)
-//            }
-//            .padding(.horizontal)
         }
     }
 
@@ -112,39 +98,12 @@ struct MoleculeViewerScreen: View {
         return yawQuat * pitchQuat
     }
 
-    private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                if let last = lastDragTranslation {
-                    let deltaX = Float(value.translation.width - last.width)
-                    let deltaY = Float(value.translation.height - last.height)
-                    yaw += deltaX * rotationSpeed
-                    pitch = clamp(pitch + deltaY * rotationSpeed, min: -.pi / 2, max: .pi / 2)
-                }
-                lastDragTranslation = value.translation
-            }
-            .onEnded { _ in
-                lastDragTranslation = nil
-            }
-    }
-
-    private var magnificationGesture: some Gesture {
-        MagnificationGesture()
-            .onChanged { value in
-                let delta = Float(value / max(lastMagnification, 0.001))
-                zoom = clamp(zoom * delta, min: minZoom, max: maxZoom)
-                lastMagnification = value
-            }
-            .onEnded { _ in
-                lastMagnification = 1
-            }
-    }
-
     private func resetView() {
         let optimalAngles = structure.calculateOptimalViewingAngles()
         yaw = optimalAngles.yaw
         pitch = optimalAngles.pitch
         zoom = 1
+        cameraOffset = .zero
     }
 
     private func formattedDegrees(_ radians: Float) -> String {
@@ -154,6 +113,188 @@ struct MoleculeViewerScreen: View {
 
     private func clamp<T: Comparable>(_ value: T, min minValue: T, max maxValue: T) -> T {
         Swift.max(minValue, Swift.min(value, maxValue))
+    }
+}
+
+// MARK: - Gesture Handler View
+
+struct GestureHandlerView: UIViewRepresentable {
+    let onRotate: (Float, Float) -> Void
+    let onPan: (CGFloat, CGFloat) -> Void
+    let onZoom: (Float) -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let view = GestureHostView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        view.onSuperviewChange = { hostView in
+            context.coordinator.installGestures(on: hostView)
+        }
+        view.onWindowChange = { hostView in
+            context.coordinator.installGestures(on: hostView)
+        }
+
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.onRotate = onRotate
+        context.coordinator.onPan = onPan
+        context.coordinator.onZoom = onZoom
+        context.coordinator.installGestures(on: uiView)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onRotate: onRotate, onPan: onPan, onZoom: onZoom)
+    }
+
+    static func dismantleUIView(_: UIView, coordinator: Coordinator) {
+        coordinator.uninstallGestures()
+    }
+
+    final class GestureHostView: UIView {
+        var onSuperviewChange: ((UIView) -> Void)?
+        var onWindowChange: ((UIView) -> Void)?
+
+        override func didMoveToSuperview() {
+            super.didMoveToSuperview()
+            onSuperviewChange?(self)
+        }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            onWindowChange?(self)
+        }
+    }
+
+    class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onRotate: (Float, Float) -> Void
+        var onPan: (CGFloat, CGFloat) -> Void
+        var onZoom: (Float) -> Void
+        private var lastRotateLocation: CGPoint?
+        private var lastPanLocation: CGPoint?
+        private var lastScale: CGFloat = 1.0
+        private weak var hostView: UIView?
+        private weak var boundsView: UIView?
+        private var rotateGesture: UIPanGestureRecognizer?
+        private var panGesture: UIPanGestureRecognizer?
+        private var pinchGesture: UIPinchGestureRecognizer?
+
+        init(onRotate: @escaping (Float, Float) -> Void, onPan: @escaping (CGFloat, CGFloat) -> Void, onZoom: @escaping (Float) -> Void) {
+            self.onRotate = onRotate
+            self.onPan = onPan
+            self.onZoom = onZoom
+        }
+
+        func installGestures(on view: UIView) {
+            boundsView = view
+            guard let newHostView = view.window ?? view.superview else { return }
+            if hostView === newHostView { return }
+
+            uninstallGestures()
+
+            let rotateGesture = UIPanGestureRecognizer(target: self, action: #selector(handleRotate(_:)))
+            rotateGesture.minimumNumberOfTouches = 1
+            rotateGesture.maximumNumberOfTouches = 1
+            rotateGesture.cancelsTouchesInView = false
+            rotateGesture.delegate = self
+
+            let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+            panGesture.minimumNumberOfTouches = 2
+            panGesture.maximumNumberOfTouches = 2
+            panGesture.cancelsTouchesInView = false
+            panGesture.delegate = self
+
+            let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+            pinchGesture.cancelsTouchesInView = false
+            pinchGesture.delegate = self
+
+            newHostView.addGestureRecognizer(rotateGesture)
+            newHostView.addGestureRecognizer(panGesture)
+            newHostView.addGestureRecognizer(pinchGesture)
+
+            hostView = newHostView
+            self.rotateGesture = rotateGesture
+            self.panGesture = panGesture
+            self.pinchGesture = pinchGesture
+        }
+
+        func uninstallGestures() {
+            if let hostView, let rotateGesture {
+                hostView.removeGestureRecognizer(rotateGesture)
+            }
+            if let hostView, let panGesture {
+                hostView.removeGestureRecognizer(panGesture)
+            }
+            if let hostView, let pinchGesture {
+                hostView.removeGestureRecognizer(pinchGesture)
+            }
+            hostView = nil
+            boundsView = nil
+            rotateGesture = nil
+            panGesture = nil
+            pinchGesture = nil
+        }
+
+        @objc func handleRotate(_ gesture: UIPanGestureRecognizer) {
+            let location = gesture.translation(in: gesture.view)
+
+            switch gesture.state {
+            case .changed:
+                if let last = lastRotateLocation {
+                    let deltaX = Float(location.x - last.x)
+                    let deltaY = Float(location.y - last.y)
+                    onRotate(deltaX, deltaY)
+                }
+                lastRotateLocation = location
+            case .ended, .cancelled:
+                lastRotateLocation = nil
+            default:
+                break
+            }
+        }
+
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            let location = gesture.translation(in: gesture.view)
+
+            switch gesture.state {
+            case .changed:
+                if let last = lastPanLocation {
+                    let deltaX = location.x - last.x
+                    let deltaY = location.y - last.y
+                    onPan(deltaX, deltaY)
+                }
+                lastPanLocation = location
+            case .ended, .cancelled:
+                lastPanLocation = nil
+            default:
+                break
+            }
+        }
+
+        @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+            switch gesture.state {
+            case .changed:
+                let scale = Float(gesture.scale / max(lastScale, 0.001))
+                onZoom(scale)
+                lastScale = gesture.scale
+            case .ended, .cancelled:
+                lastScale = 1.0
+            default:
+                break
+            }
+        }
+
+        func gestureRecognizer(_: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith _: UIGestureRecognizer) -> Bool {
+            // Allow pinch and pan to work together
+            true
+        }
+
+        func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            guard let boundsView else { return true }
+            let location = touch.location(in: boundsView)
+            return boundsView.bounds.contains(location)
+        }
     }
 }
 

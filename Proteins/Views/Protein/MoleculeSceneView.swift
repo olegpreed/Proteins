@@ -15,6 +15,7 @@ struct MoleculeSceneView: View {
     let structure: CIFStructure
     let rotation: simd_quatf
     let zoom: Float
+    let cameraOffset: SIMD2<Float>
     let showHydrogen: Bool
     @ObservedObject var coordinator: MoleculeSceneCoordinator
 
@@ -26,7 +27,7 @@ struct MoleculeSceneView: View {
             }
 
             coordinator.structure = structure
-            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom, showHydrogen: showHydrogen) {
+            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom, cameraOffset: cameraOffset, showHydrogen: showHydrogen) {
                 content.add(newRoot)
                 coordinator.rootEntity = newRoot
             }
@@ -37,7 +38,7 @@ struct MoleculeSceneView: View {
             }
 
             coordinator.structure = structure
-            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom, showHydrogen: showHydrogen) {
+            if let newRoot = MoleculeSceneBuilder.makeScene(for: structure, rotation: rotation, zoom: zoom, cameraOffset: cameraOffset, showHydrogen: showHydrogen) {
                 content.add(newRoot)
                 coordinator.rootEntity = newRoot
 
@@ -132,6 +133,61 @@ final class MoleculeSceneCoordinator: ObservableObject {
 }
 
 enum MoleculeSceneBuilder {
+    private static let bondRadius: Float = 0.008
+    private static let bondSpacing: Float = 0.025
+
+    private static func createSingleBondTemplate(height: Float, material: SimpleMaterial) -> Entity {
+        let mesh = MeshResource.generateCylinder(height: height, radius: bondRadius)
+        return ModelEntity(mesh: mesh, materials: [material])
+    }
+
+    private static func createDoubleBondTemplate(height: Float, material: SimpleMaterial) -> Entity {
+        let container = Entity()
+
+        let cylinder1 = ModelEntity(
+            mesh: MeshResource.generateCylinder(height: height, radius: bondRadius),
+            materials: [material]
+        )
+        cylinder1.position.x = -bondSpacing / 2
+
+        let cylinder2 = ModelEntity(
+            mesh: MeshResource.generateCylinder(height: height, radius: bondRadius),
+            materials: [material]
+        )
+        cylinder2.position.x = bondSpacing / 2
+
+        container.addChild(cylinder1)
+        container.addChild(cylinder2)
+        return container
+    }
+
+    private static func createTripleBondTemplate(height: Float, material: SimpleMaterial) -> Entity {
+        let container = Entity()
+
+        let cylinder1 = ModelEntity(
+            mesh: MeshResource.generateCylinder(height: height, radius: bondRadius),
+            materials: [material]
+        )
+        cylinder1.position.x = -bondSpacing
+
+        let cylinder2 = ModelEntity(
+            mesh: MeshResource.generateCylinder(height: height, radius: bondRadius),
+            materials: [material]
+        )
+        cylinder2.position.x = 0
+
+        let cylinder3 = ModelEntity(
+            mesh: MeshResource.generateCylinder(height: height, radius: bondRadius),
+            materials: [material]
+        )
+        cylinder3.position.x = bondSpacing
+
+        container.addChild(cylinder1)
+        container.addChild(cylinder2)
+        container.addChild(cylinder3)
+        return container
+    }
+
     static func makeOutlineEntity() -> Entity {
         let entity = Entity()
         entity.name = "selection-outline"
@@ -164,7 +220,7 @@ enum MoleculeSceneBuilder {
         return entity
     }
 
-    static func makeScene(for structure: CIFStructure, rotation: simd_quatf, zoom: Float, showHydrogen: Bool) -> Entity? {
+    static func makeScene(for structure: CIFStructure, rotation: simd_quatf, zoom: Float, cameraOffset: SIMD2<Float>, showHydrogen: Bool) -> Entity? {
         // Check if we should use ideal or model coordinates
         // Use model coords if ANY atom is missing ideal coords (to avoid coordinate system mismatch)
         let useIdealCoords = structure.atoms.allSatisfy { atom in
@@ -189,7 +245,7 @@ enum MoleculeSceneBuilder {
         root.name = "MoleculeRoot"
 
         addLighting(to: root)
-        addCamera(to: root, radius: centeredAtoms.maxRadius, zoom: zoom)
+        addCamera(to: root, radius: centeredAtoms.maxRadius, zoom: zoom, offset: cameraOffset)
 
         let moleculeEntity = Entity()
         moleculeEntity.name = "MoleculeModel"
@@ -241,11 +297,6 @@ enum MoleculeSceneBuilder {
         let upAxis = SIMD3<Float>(0, 1, 0)
         let normalizedDirection = simd_normalize(direction)
         let rotation = simd_quatf(from: upAxis, to: normalizedDirection)
-        var offsetAxis = simd_cross(normalizedDirection, SIMD3<Float>(0, 0, 1))
-        if simd_length_squared(offsetAxis) < 0.0001 {
-            offsetAxis = simd_cross(normalizedDirection, SIMD3<Float>(0, 1, 0))
-        }
-        offsetAxis = simd_normalize(offsetAxis)
 
         let container = Entity()
         container.transform.translation = midpoint
@@ -253,29 +304,19 @@ enum MoleculeSceneBuilder {
         container.name = "bond"
 
         let primaryMaterial = SimpleMaterial(color: .systemGray3, roughness: 0.9, isMetallic: true)
-        let baseRadius: Float = 0.022
-        let secondaryRadius: Float = 0.015
-        let tertiaryRadius: Float = 0.013
-        let offsetDistance: Float = 0.032
+        let atomRadius: Float = 0.05
+        let bondLength = max(distance - (atomRadius * 1.6), 0.001)
 
-        func addCylinder(radius: Float, material: SimpleMaterial, offsetScale: Float) {
-            let mesh = MeshResource.generateCylinder(height: distance, radius: radius)
-            let cylinder = ModelEntity(mesh: mesh, materials: [material])
-            cylinder.transform.translation = offsetAxis * offsetDistance * offsetScale
-            container.addChild(cylinder)
-        }
-
-        switch order {
-        case .double:
-            addCylinder(radius: secondaryRadius, material: primaryMaterial, offsetScale: 1)
-            addCylinder(radius: secondaryRadius, material: primaryMaterial, offsetScale: -1)
+        let bondEntity: Entity = switch order {
+        case .double, .aromatic:
+            createDoubleBondTemplate(height: bondLength, material: primaryMaterial)
         case .triple:
-            addCylinder(radius: baseRadius * 0.9, material: primaryMaterial, offsetScale: 0)
-            addCylinder(radius: tertiaryRadius, material: primaryMaterial, offsetScale: 1)
-            addCylinder(radius: tertiaryRadius, material: primaryMaterial, offsetScale: -1)
+            createTripleBondTemplate(height: bondLength, material: primaryMaterial)
         default:
-            addCylinder(radius: baseRadius, material: primaryMaterial, offsetScale: 0)
+            createSingleBondTemplate(height: bondLength, material: primaryMaterial)
         }
+
+        container.addChild(bondEntity)
 
         return container
     }
@@ -294,15 +335,15 @@ enum MoleculeSceneBuilder {
         root.addChild(ambientLight)
     }
 
-    private static func addCamera(to root: Entity, radius: Float, zoom: Float) {
+    private static func addCamera(to root: Entity, radius: Float, zoom: Float, offset: SIMD2<Float>) {
         let camera = Entity()
         camera.components.set(PerspectiveCameraComponent())
         let baseDistance = max(radius * 2.5, 2.5)
         let distance = max(baseDistance / max(zoom, 0.25), 1.0)
         var transform = Transform()
-        transform.translation = SIMD3<Float>(0, 0, distance)
+        transform.translation = SIMD3<Float>(offset.x, offset.y, distance)
         camera.transform = transform
-        camera.look(at: .zero, from: transform.translation, relativeTo: nil)
+        camera.look(at: SIMD3<Float>(offset.x, offset.y, 0), from: transform.translation, relativeTo: nil)
         root.addChild(camera)
     }
 
