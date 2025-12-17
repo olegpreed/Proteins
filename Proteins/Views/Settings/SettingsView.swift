@@ -63,7 +63,6 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-//                    .toolbar(.hidden)
         }
     }
 }

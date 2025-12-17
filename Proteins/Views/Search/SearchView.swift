@@ -31,25 +31,22 @@ struct SearchView: View {
     var body: some View {
         NavigationStack {
             LigandsListView(ligands: filteredLigands)
-                .padding(.top, 30)
-            .onChange(of: searchText) { _, newValue in
-                if newValue.isEmpty {
-                    filteredLigands = ligands
-                } else {
-                    filteredLigands = ligands.filter { $0.localizedCaseInsensitiveContains(newValue) }
-                }
-            }
-//            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Label("Settings", systemImage: "gearshape")
+                .onChange(of: searchText) { _, newValue in
+                    if newValue.isEmpty {
+                        filteredLigands = ligands
+                    } else {
+                        filteredLigands = ligands.filter { $0.localizedCaseInsensitiveContains(newValue) }
                     }
                 }
-            }
-            .ignoresSafeArea()
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            SettingsView()
+                        } label: {
+                            Label("Settings", systemImage: "gearshape")
+                        }
+                    }
+                }
         }
         .searchable(text: $searchText, prompt: "Search Proteins")
     }

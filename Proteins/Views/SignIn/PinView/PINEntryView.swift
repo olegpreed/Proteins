@@ -154,10 +154,7 @@ struct NumberButton: View {
                 .frame(width: 80, height: 80)
                 .foregroundStyle(.foreground)
         }
-        //        .buttonSizing(.flexible)
-        //        .buttonBorderShape(.circle)
         .glassEffect(.clear.interactive())
-        //        .buttonStyle(.glass)
     }
 }
 
